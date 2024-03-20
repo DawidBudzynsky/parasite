@@ -297,6 +297,8 @@ aspect_block         = "{", { variable_declaration }, aspect_member "}" ;
 
 aspect_member        = before_statement | after_statement ;
 
+aspect_member        = ( before_statement, [ after_statement ] ) | ( after_statement, [ before_statement ] ) ;
+
 before_statement     = "before", block ;
 
 before_statement     = "after", block ;
