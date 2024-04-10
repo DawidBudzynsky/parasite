@@ -1,0 +1,30 @@
+doSomething(number: int){
+        print("hello" + number)
+}
+
+aspect doThat(doSomething){
+        before{
+                print("before action")
+        }
+        after{
+                print("after action" + function.name)
+        }
+}
+
+while i < 10 {
+        print(i)
+        i = i + 1   // this is a comment
+}
+
+for arg in function.args{
+    if arg.type is int{
+        print("arg is int")
+    }
+}
+
+float a = 3.532531
+studends.getNames().first().name
+
+1/2
+1//2lorem
+str sth = "what\nsometext"

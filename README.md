@@ -1,5 +1,3 @@
-# Dokumentacja wstępna TKOM - język z uwzględnieniem aspektów
-
 ## Opis
 
 Projekt języka programowania “Parasite”. Napisany w języku Python.
@@ -11,7 +9,7 @@ Język Parasite ma umożliwiać zaimplementowanie paradygmatu programowania aspe
 - inicjalizacja i przypisanie zmiennej
 - obsługa operacji arytmetycznych ( o różnym priorytecie wykonania)
 - konkatenacja typu string
-- instrukcje warunkowe (if, else if, else)
+- instrukcje warunkowe (if, elif, else)
 - instrukcja pętli (while)
 - definiowanie funkcji
 - wywołania funkcji (zwykłe i rekurencyjne)
@@ -81,7 +79,7 @@ instrukcje warunkowe
 int a = 6
 if a > 3 {
 	print("a is greater than 3")
-} else if a < 3 {
+} elif a < 3 {
 	print("a is smaller than 3")
 } else {
 	print("a is equal to 3")
@@ -176,7 +174,7 @@ doSomething(){
 aspect logFunctionCall(doSomething, "doSomething\s*\(\s*[^)]*\)\s*"){
 				int coutner = 0;
         before{
-		        for arg = function.args {
+		        for arg in function.args {
 			        print(arg.value)
 			        print(arg.name)
 			        print(arg.type)
@@ -254,7 +252,7 @@ if_statement         = "if", expression, block, { "elif", expression, block }, [
 
 loop_statement       = "while", expression, block ;
 
-for_each_statement   = "for", assign_or_call, block ;
+for_each_statement   = "for", idientifier, "in", expression, block ;
 
 return_statement     = "return", [ expression ] ;
 
@@ -280,16 +278,20 @@ multiplicative_term  = unary_application, { ("*" | "/"), unary_application } ;
 
 unary_application    = [ ("-" | "!") ], casting ;
 
-casting              = dot_operator, [ "->", type ] ;
-
-dot_operator         = term, { ".", term }
+casting              = term, [ "->", type ] ;
 
 term                 = integer
                      | float
                      | bool
                      | string
-                     | assign_or_call
+                     | object_access
                      | "(" , expression , ")" ;
+                                          
+object_access        = item, {".", item}
+
+item                 = identifier_or_call
+
+identifier_or_call   = identifier, ["(", arguments, ")"]
                                           
 aspect_definition    = "aspect", identifier, "(", (identifier | string) {"," (identifier | string), ")", aspect_block;
 
@@ -307,7 +309,7 @@ identifier           = letter , { letter | digit | "_" } ;
 
 float                = integer , "." , digit , { digit } ;
 
-integer              = positive_digit , { digit } ;
+integer              = "0" | positive_digit , { digit } ;
 
 string               = '"' , { literal } , "\n" '"' ;
 
@@ -515,8 +517,8 @@ Operatory arytmetyczne:
 
 Operatory logiczne:
 
-- AND (&&)
-- OR (||)
+- AND (and)
+- OR (or)
 - NEGATE(!)
 - IS (is)
 
@@ -531,6 +533,7 @@ Słowa kluczowe:
 
 - WHILE
 - FOR_EACH
+- IN
 - IF
 - ELSE
 - ASPECT
