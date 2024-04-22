@@ -1,3 +1,4 @@
+from io import StringIO
 import pytest
 from errors import LexerError
 from reader import Source
@@ -7,7 +8,7 @@ from tokens import Type, Token
 
 @pytest.fixture
 def lexer():
-    source = Source("fjdkasl")
+    source = Source(StringIO("fjdkasl"))
     return Lexer(source)
 
 
@@ -64,13 +65,13 @@ def lexer():
     ],
 )
 def test_tokens(lexer, input_str, expected):
-    lexer.source = Source(input_str)
+    lexer.source = Source(StringIO(input_str))
     token = lexer.build_next_token()
     assert token == expected
 
 
 def test_unclosed_string_error():
-    lexer = Lexer(Source('"something'))
+    lexer = Lexer(Source(StringIO('"something')))
     with pytest.raises(LexerError):
         lexer.build_next_token()
 
@@ -98,7 +99,7 @@ def test_code_example():
         Token(Type.BRACE_CLOSE, None, (3, 27)),
         Token(Type.ETX, None, (3, 28)),
     ]
-    source = Source(input)
+    source = Source(StringIO(input))
     lexer = Lexer(source)
     tokens = []
 

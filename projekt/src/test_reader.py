@@ -1,6 +1,7 @@
 from _pytest import assertion
 import pytest
 from reader import Source
+from io import StringIO
 
 
 def test_read():
@@ -29,7 +30,7 @@ def test_read():
         },
     ]
     for test_case in test_data:
-        reader = Source(test_case.get("input"))
+        reader = Source(StringIO(test_case.get("input")))
         result_chars = []
         result_position = []
         while char := reader.get_char():
@@ -43,6 +44,6 @@ def test_read():
 def test_multiple_eof():
     input = ""
     expected_chars = ""
-    reader = Source(input)
+    reader = Source(StringIO(input))
     char = reader.get_char()
     assert char == expected_chars

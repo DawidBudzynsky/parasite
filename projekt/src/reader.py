@@ -5,12 +5,8 @@ class Source:
     def __init__(self, source_stream):
         self.line_number = 1
         self.column = 0
-        # self.source_stream = source_stream
-        if isinstance(source_stream, str):
-            self.source_stream = StringIO(source_stream)
-        else:
-            self.source_stream = source_stream
-        self.character = None
+        self.source_stream = source_stream
+        self.character = chr(2)
         self.next()
 
     def get_char(self):
@@ -28,6 +24,7 @@ class Source:
 
         self.character = self.source_stream.read(1)
 
+        # TODO: obsługa \r\n
         self.column += 1
         return self.character
 

@@ -1,4 +1,5 @@
-from errors import ERROR_MESSAGES, LexerError
+import builtins
+from errors import LexerError
 from reader import Source
 from tokens import Token, Symbol, Type
 import sys
@@ -9,6 +10,12 @@ class Lexer:
     def __init__(self, source: Source):
         self.source = source
         self.position = self.source.get_position()
+        self.errors_map = {
+            "invalid_escape": "Error, invalid escaping sequence",
+            "unclosed_string": "Error, unclosed string;",
+            "token_build_failed": "Error, lexer was unable to create token;",
+            "string_length": "Error, string too long, 200 char is max;",
+        }
         self.operators = {
             "{": lambda: self.build_one_char_operator(Type.BRACE_OPEN),
             "}": lambda: self.build_one_char_operator(Type.BRACE_CLOSE),
@@ -54,20 +61,19 @@ class Lexer:
         self.ignore_white_spaces()
         if token := self.try_to_match():
             return token
-        raise LexerError(ERROR_MESSAGES.get("token_build_failed"), self.position)
+        raise LexerError(self.errors_map.get("token_build_failed"), self.position)
 
     def build_number(self, position):
-        if not self.source.get_char().isdigit():
+        if not self.source.get_char().isdecimal():
             return None
 
-        value = 0
-        if self.source.get_char() == "0":
-            self.consume()
-        else:
-            while self.source.get_char().isdigit():
+        value = int(self.source.get_char())
+        self.consume()
+        if value != 0:
+            while self.source.get_char().isdecimal():
                 digit = int(self.source.get_char())
                 if value > (sys.maxsize - digit) / 10:
-                    raise LexerError(ERROR_MESSAGES.get("int_max_size"))
+                    raise LexerError(self.errors_map.get("int_max_size"))
                 value = value * 10 + digit
                 self.consume()
 
@@ -77,10 +83,10 @@ class Lexer:
 
         decimals = 0
         dec_value = 0
-        while self.source.get_char().isdigit():
+        while self.source.get_char().isdecimal():
             digit = int(self.source.get_char())
             if dec_value > (sys.maxsize - digit) / 10:
-                raise LexerError(ERROR_MESSAGES.get("int_max_size"))
+                raise LexerError(self.errors_map.get("int_max_size"))
             dec_value = dec_value * 10 + digit
             decimals += 1
             self.consume()
@@ -100,19 +106,18 @@ class Lexer:
         self.consume()
         while (
             self.source.get_char().isalpha()
-            or self.source.get_char().isdigit()
+            or self.source.get_char().isdecimal()
             or self.source.get_char() == "_"
         ):
-            if len(identifier.getvalue()) > 200:
-                raise LexerError(ERROR_MESSAGES.get("string_length"), self.position)
+            if len(identifier.getvalue()) >= 200:
+                raise LexerError(self.errors_map.get("string_length"), self.position)
             identifier.write(self.source.get_char())
             self.consume()
 
         identifier = identifier.getvalue()
-        if token_type := Symbol.key_words.get(identifier):
-            return Token(token_type, identifier, position)
-
-        return Token(Type.IDENTIFIER, identifier, position)
+        return Token(
+            Symbol.key_words.get(identifier, Type.IDENTIFIER), identifier, position
+        )
 
     def handle_escaping(self):
         if self.source.get_char() != "\\":
@@ -128,7 +133,7 @@ class Lexer:
             case "\\":
                 return "\\"
             case _:
-                raise LexerError(ERROR_MESSAGES.get("invalid_escape"), self.position)
+                raise LexerError(self.errors_map.get("invalid_escape"), self.position)
 
     def build_string(self, position):
         if self.source.get_char() != '"':
@@ -136,14 +141,14 @@ class Lexer:
         string_builder = StringIO()
         self.consume()
         while self.source.get_char() != '"' and self.source.get_char() != "":
-            if len(string_builder.getvalue()) > 200:
-                raise LexerError(ERROR_MESSAGES.get("string_length"), self.position)
             character_to_append = self.handle_escaping()
+            if len(string_builder.getvalue()) >= 200:
+                raise LexerError(self.errors_map.get("string_length"), self.position)
             string_builder.write(character_to_append)
             self.consume()
 
         if self.source.get_char() != '"':
-            raise LexerError(ERROR_MESSAGES.get("unclosed_string"), self.position)
+            raise LexerError(self.errors_map.get("unclosed_string"), self.position)
 
         self.consume()
         return Token(Type.STRING, string_builder.getvalue(), position)
@@ -153,13 +158,19 @@ class Lexer:
         if buff != "/":
             return None
         character = self.source.next()
-        if buff + character == "//":
+        if character is not None and buff + character == "//":
             self.consume()
             string_builder = StringIO()
+            # białe znaki
             while self.source.get_char() != "\n" and self.source.get_char() != "":
+                if len(string_builder.getvalue()) >= 200:
+                    raise LexerError(
+                        self.errors_map.get("string_length"), self.position
+                    )
                 string_builder.write(self.source.get_char())
                 self.consume()
-            return Token(Type.COMMENT, string_builder.getvalue().lstrip(), position)
+            # białe znaki
+            return Token(Type.COMMENT, string_builder.getvalue().strip(), position)
         else:
             return Token(Type.DIVIDE, None, position)
 
