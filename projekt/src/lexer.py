@@ -10,11 +10,14 @@ class Lexer:
     def __init__(self, source: Source):
         self.source = source
         self.position = self.source.get_position()
+        self.string_limit = 200
+        self.identifier_limit = 200
         self.errors_map = {
             "invalid_escape": "Error, invalid escaping sequence",
             "unclosed_string": "Error, unclosed string;",
             "token_build_failed": "Error, lexer was unable to create token;",
-            "string_length": "Error, string too long, 200 char is max;",
+            "string_length": f"Error, string too long, {self.string_limit} char is max;",
+            "identifier_length": f"Error, identifier too long, {self.identifier_limit} char is max;",
         }
         self.operators = {
             "{": lambda: self.build_one_char_operator(Type.BRACE_OPEN),
@@ -143,7 +146,9 @@ class Lexer:
         while self.source.get_char() != '"' and self.source.get_char() != "":
             character_to_append = self.handle_escaping()
             if len(string_builder.getvalue()) >= 200:
-                raise LexerError(self.errors_map.get("string_length"), self.position)
+                raise LexerError(
+                    self.errors_map.get("identifier_length"), self.position
+                )
             string_builder.write(character_to_append)
             self.consume()
 
@@ -161,7 +166,6 @@ class Lexer:
         if character is not None and buff + character == "//":
             self.consume()
             string_builder = StringIO()
-            # białe znaki
             while self.source.get_char() != "\n" and self.source.get_char() != "":
                 if len(string_builder.getvalue()) >= 200:
                     raise LexerError(
@@ -169,8 +173,7 @@ class Lexer:
                     )
                 string_builder.write(self.source.get_char())
                 self.consume()
-            # białe znaki
-            return Token(Type.COMMENT, string_builder.getvalue().strip(), position)
+            return Token(Type.COMMENT, string_builder.getvalue(), position)
         else:
             return Token(Type.DIVIDE, None, position)
 
