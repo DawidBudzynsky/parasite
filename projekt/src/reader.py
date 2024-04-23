@@ -24,7 +24,14 @@ class Source:
 
         self.character = self.source_stream.read(1)
 
-        # TODO: obsługa \r\n
+        # TODO: handling \r\n
+        if self.character == "\r":
+            next_char = self.source_stream.read(1)
+            if next_char == "\n":
+                self.character = next_char
+            else:
+                self.source_stream.seek(self.source_stream.tell() - 1)
+
         self.column += 1
         return self.character
 

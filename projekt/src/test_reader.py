@@ -47,3 +47,14 @@ def test_multiple_eof():
     reader = Source(StringIO(input))
     char = reader.get_char()
     assert char == expected_chars
+
+
+def test_backslash_r():
+    input = "\r\tt\t\r\na"
+    expected_chars = "\r\tt\t\na"
+    reader = Source(StringIO(input))
+    f = []
+    while char := reader.get_char():
+        f.append(char)
+        reader.next()
+    assert "".join(f) == expected_chars
