@@ -1,6 +1,6 @@
-from lexer import Lexer
-from tokens import Token, Type
-from reader import Source
+from projekt.src.lexer.lexer import Lexer
+from projekt.src.lexer.tokens import Token, Type
+from projekt.src.lexer.reader import Source
 
 
 file_name = "testfile.txt"

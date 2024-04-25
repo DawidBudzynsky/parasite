@@ -1,6 +1,3 @@
-from io import StringIO
-
-
 class Source:
     def __init__(self, source_stream):
         self.line_number = 1
@@ -24,7 +21,6 @@ class Source:
 
         self.character = self.source_stream.read(1)
 
-        # TODO: handling \r\n
         if self.character == "\r":
             next_char = self.source_stream.read(1)
             if next_char == "\n":

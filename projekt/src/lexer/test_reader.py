@@ -1,6 +1,4 @@
-from _pytest import assertion
-import pytest
-from reader import Source
+from projekt.src.lexer.reader import Source
 from io import StringIO
 
 
