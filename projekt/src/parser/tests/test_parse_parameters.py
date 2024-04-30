@@ -1,15 +1,5 @@
-from io import StringIO
-from projekt.src.lexer.lexer import Lexer
-from projekt.src.lexer.reader import Source
-from projekt.src.parser.parser import Parser
-from projekt.src.parser.values.plus_expression import AddExpresion
+from projekt.src.parser.tests.test_utils import create_parser
 from projekt.src.parser.variable import Variable
-
-
-def create_parser(string: str):
-    source = Source(StringIO(string))
-    lexer = Lexer(source)
-    return Parser(lexer)
 
 
 def test_parse_parameter_number():
@@ -28,7 +18,7 @@ def test_parse_parameter_string():
     assert a == expected
 
 
-def test_parse_parameters():
+def test_parse_parameters_multiple():
     parser = create_parser("number: int, name: str, dec_num: float, is_ok: bool")
     expected = [
         Variable("number", "int", position=(1, 1)),
@@ -39,10 +29,3 @@ def test_parse_parameters():
     a = parser.parse_parameters()
     print(a)
     assert a == expected
-
-
-def test_variable_declaration():
-    parser = create_parser("int a = 1 + 3")
-    expected = Variable("a", "int", value=AddExpresion(1, 3), position=(1, 1))
-    statement = parser.parse_variable_declaration()
-    assert statement == expected

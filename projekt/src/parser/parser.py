@@ -1,4 +1,5 @@
 from typing import List
+
 from projekt.src.lexer.lexer import Lexer
 from projekt.src.lexer.tokens import Token, Type
 from projekt.src.parser.values.and_expression import AndExpression
@@ -6,8 +7,10 @@ from projekt.src.parser.values.casting_expression import CastingExpression
 from projekt.src.parser.values.divide_expression import DivideExpression
 from projekt.src.parser.function import FunctionDef
 from projekt.src.parser.values.equals_expression import EqualsExpression
+from projekt.src.parser.values.function_call import FunctionCall
 from projekt.src.parser.values.greater_equal_expression import GreaterEqualExpression
 from projekt.src.parser.values.greater_expression import GreaterExpression
+from projekt.src.parser.values.identifier_expression import Identifier
 from projekt.src.parser.values.is_expression import IsExpression
 from projekt.src.parser.values.less_equal_expression import LessEqualExpresion
 from projekt.src.parser.values.less_expression import LessExpresion
@@ -16,11 +19,10 @@ from projekt.src.parser.values.multiply_expression import MultiplyExpression
 from projekt.src.parser.values.negate_expression import NegateExpression
 from projekt.src.parser.values.minus_expression import SubtractExpression
 from projekt.src.parser.values.not_equals_expression import NotEqualsExpression
+from projekt.src.parser.values.object_access_expression import ObjectAccessExpression
 from projekt.src.parser.values.or_expression import OrExpression
 from projekt.src.parser.values.plus_expression import AddExpresion
 from projekt.src.parser.variable import Variable
-
-TYPES = [Type.INTEGER_TYPE, Type.FLOAT_TYPE, Type.STRING_TYPE, Type.BOOL_TYPE]
 
 
 class Parser:
@@ -28,7 +30,7 @@ class Parser:
         self.lexer = lexer
         self.token = Token()
         self.consume_token()
-        self.add_or_minus_map = {
+        self.addition_map = {
             Type.PLUS: AddExpresion,
             Type.MINUS: SubtractExpression,
         }
@@ -49,6 +51,12 @@ class Parser:
             Type.NOT_EQUALS: NotEqualsExpression,
             Type.IS: IsExpression,
         }
+        self.types = [
+            Type.INTEGER_TYPE,
+            Type.FLOAT_TYPE,
+            Type.STRING_TYPE,
+            Type.BOOL_TYPE,
+        ]
 
     def consume_token(self):
         self.token = self.lexer.build_next_token()
@@ -117,11 +125,11 @@ class Parser:
         identifier = self.__must_be(Type.IDENTIFIER)
 
         self.__must_be(Type.COLON)
-        type = self.__must_be(*TYPES)
+        type = self.__must_be(*self.types)
         return Variable(identifier, type, position=position)
 
     def parse_type_annotation(self):
-        if self.token.token_type not in TYPES:
+        if self.token.token_type not in self.types:
             return None
         value = self.token.value
         self.consume_token()
@@ -145,17 +153,17 @@ class Parser:
 
     # variable_declaration = type, identifier, "=", expression ;
     def parse_variable_declaration(self):
-        if self.token.token_type not in TYPES:
+        if self.token.token_type not in self.types:
             return None
         position = self.token.position
         type = self.parse_type_annotation()
         identifier = self.__must_be(Type.IDENTIFIER)
         self.__must_be(Type.ASSIGNMENT)
-        value = self.parse_or_condition()
+        value = self.parse_expression()
         return Variable(identifier, type, value, position)
 
     # expression = conjunction, { "or", conjunction } ;
-    def parse_or_condition(self):
+    def parse_expression(self):
         if (left_logic_factor := self.parse_conjunction()) is None:
             return None
         while self.token.token_type == Type.OR:
@@ -196,11 +204,7 @@ class Parser:
     def parse_additive(self):
         if (left_logic_factor := self.parse_multiplicative()) is None:
             return None
-
-        self.consume_token()
-        while (
-            constructor := self.add_or_minus_map.get(self.token.token_type)
-        ) is not None:
+        while (constructor := self.addition_map.get(self.token.token_type)) is not None:
             # position = self.token.position  # NOTE: not sure if i need it here
             self.consume_token()
             if (right_logic_factor := self.parse_multiplicative()) is None:
@@ -212,6 +216,7 @@ class Parser:
     def parse_multiplicative(self):
         if (left_logic_factor := self.parse_unary()) is None:
             return None
+        # self.consume_token()
         while (
             constructor := self.multiply_or_divide_map.get(self.token.token_type)
         ) is not None:
@@ -244,19 +249,26 @@ class Parser:
     # term = integer | float | bool | string | object_access | "(", expression, ")";
     def parse_term(self):
         # NOTE: somehow i have to ensure what type is returned
+        value = self.token.value
         match self.token.token_type:
             case Type.IDENTIFIER:
-                return self.parse_object_access()
+                self.consume_token()
+                return value
             case Type.INTEGER:
-                return self.token.value
+                self.consume_token()
+                return value
             case Type.FLOAT:
-                return self.token.value
+                self.consume_token()
+                return value
             case Type.BOOL:
-                return self.token.value
+                self.consume_token()
+                return value
             case Type.STRING:
-                return self.token.value
+                self.consume_token()
+                return value
             case Type.PAREN_OPEN:
-                expression = self.parse_or_condition()
+                self.consume_token()
+                expression = self.parse_expression()
                 self.__must_be(Type.PAREN_CLOSE)
                 return expression
 
@@ -268,7 +280,7 @@ class Parser:
             self.consume_token()
             if (right_item := self.parse_identifier_or_call()) is None:
                 raise ValueError("brak item po '.'")
-            left_item = ItemExpression(left_item, right_item)
+            left_item = ObjectAccessExpression(left_item, right_item)
         return left_item
 
     # identifier_or_call = identifier, ["(", arguments, ")"]
@@ -287,17 +299,30 @@ class Parser:
         self.__must_be(Type.PAREN_CLOSE)
         return FunctionCall(identifier, arguments)
 
+    # arguments = [ expression, {",", expression } ] ;
+    def parse_arguments(self):
+        expressions = []
+        if (left_expr := self.parse_expression()) is None:
+            return expressions
+        expressions.append(left_expr)
+        while self.token.token_type == Type.COMMA:
+            self.consume_token()
+            if (right_expr := self.parse_expression()) is None:
+                raise ValueError("nie ma expression po przecinku")
+            expressions.append(right_expr)
+        return expressions
+
     # if_statement = "if", expression, block, { "elif", expression, block }, ["else", block] ;
     def parse_if_statement(self):
         if self.token.token_type != Type.IF:
             return None
         self.consume_token()
 
-        value = self.parse_or_condition()
+        value = self.parse_expression()
         block = self.parse_block()
 
         while self.token.token_type == Type.ELIF:
-            value = self.parse_or_condition()
+            value = self.parse_expression()
             block = self.parse_block()
 
         if self.token.token_type == Type.ELSE:
