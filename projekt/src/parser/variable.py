@@ -12,7 +12,11 @@ class Variable(Node):
     def __eq__(self, other):
         if not isinstance(other, Variable):
             return False
-        return self.identifier == other.identifier and self.type == other.type
+        return (
+            self.identifier == other.identifier
+            and self.type == other.type
+            and self.value == other.value
+        )
 
     def accept(self, visitator):
         return visitator.visit_function(self)

@@ -1,7 +1,23 @@
 from typing import List
 from projekt.src.lexer.lexer import Lexer
 from projekt.src.lexer.tokens import Token, Type
+from projekt.src.parser.values.and_expression import AndExpression
+from projekt.src.parser.values.casting_expression import CastingExpression
+from projekt.src.parser.values.divide_expression import DivideExpression
 from projekt.src.parser.function import FunctionDef
+from projekt.src.parser.values.equals_expression import EqualsExpression
+from projekt.src.parser.values.greater_equal_expression import GreaterEqualExpression
+from projekt.src.parser.values.greater_expression import GreaterExpression
+from projekt.src.parser.values.is_expression import IsExpression
+from projekt.src.parser.values.less_equal_expression import LessEqualExpresion
+from projekt.src.parser.values.less_expression import LessExpresion
+from projekt.src.parser.values.minus_negate_expression import MinusNegateExpression
+from projekt.src.parser.values.multiply_expression import MultiplyExpression
+from projekt.src.parser.values.negate_expression import NegateExpression
+from projekt.src.parser.values.minus_expression import SubtractExpression
+from projekt.src.parser.values.not_equals_expression import NotEqualsExpression
+from projekt.src.parser.values.or_expression import OrExpression
+from projekt.src.parser.values.plus_expression import AddExpresion
 from projekt.src.parser.variable import Variable
 
 TYPES = [Type.INTEGER_TYPE, Type.FLOAT_TYPE, Type.STRING_TYPE, Type.BOOL_TYPE]
@@ -12,6 +28,27 @@ class Parser:
         self.lexer = lexer
         self.token = Token()
         self.consume_token()
+        self.add_or_minus_map = {
+            Type.PLUS: AddExpresion,
+            Type.MINUS: SubtractExpression,
+        }
+        self.multiply_or_divide_map = {
+            Type.MULTIPLY: MultiplyExpression,
+            Type.DIVIDE: DivideExpression,
+        }
+        self.unary_map = {
+            Type.MINUS: MinusNegateExpression,
+            Type.NEGATE: NegateExpression,
+        }
+        self.relation_operators = {
+            Type.GREATER: GreaterExpression,
+            Type.GREATER_EQUAL: GreaterEqualExpression,
+            Type.LESS: LessExpresion,
+            Type.LESS_EQUAL: LessEqualExpresion,
+            Type.EQUALS: EqualsExpression,
+            Type.NOT_EQUALS: NotEqualsExpression,
+            Type.IS: IsExpression,
+        }
 
     def consume_token(self):
         self.token = self.lexer.build_next_token()
@@ -81,7 +118,7 @@ class Parser:
 
         self.__must_be(Type.COLON)
         type = self.__must_be(*TYPES)
-        return Variable(identifier, type, position)
+        return Variable(identifier, type, position=position)
 
     def parse_type_annotation(self):
         if self.token.token_type not in TYPES:
@@ -102,6 +139,7 @@ class Parser:
         self.__must_be(Type.BRACE_CLOSE)
         return statements
 
+    # TODO: parse_statement
     def parse_statement(self):
         pass
 
@@ -113,8 +151,141 @@ class Parser:
         type = self.parse_type_annotation()
         identifier = self.__must_be(Type.IDENTIFIER)
         self.__must_be(Type.ASSIGNMENT)
-        value = self.parse_expression()
+        value = self.parse_or_condition()
         return Variable(identifier, type, value, position)
+
+    # expression = conjunction, { "or", conjunction } ;
+    def parse_or_condition(self):
+        if (left_logic_factor := self.parse_conjunction()) is None:
+            return None
+        while self.token.token_type == Type.OR:
+            # position = self.token.position
+            self.consume_token()
+            if (right_logic_factor := self.parse_conjunction()) is None:
+                raise ValueError("brak expression po OR")
+            left_logic_factor = OrExpression(left_logic_factor, right_logic_factor)
+        return left_logic_factor
+
+    # conjunction = relation_term, { "and", relation_term } ;
+    def parse_conjunction(self):
+        if (left_logic_factor := self.parse_relation()) is None:
+            return None
+        while self.token.token_type == Type.AND:
+            # position = self.token.position
+            self.consume_token()
+            if (right_logic_factor := self.parse_relation()) is None:
+                raise ValueError("brak expression po AND")
+            left_logic_factor = AndExpression(left_logic_factor, right_logic_factor)
+        return left_logic_factor
+
+    # relation_term = additive_term, [ relation_operator, additive_term ] ;
+    # (2+2) < a
+    def parse_relation(self):
+        if (left_logic_factor := self.parse_additive()) is None:
+            return None
+
+        if (constructor := self.relation_operators.get(self.token.token_type)) is None:
+            return left_logic_factor
+
+        if (right_logic_factor := self.parse_additive()) is None:
+            raise ValueError("brak expression po operatorze")
+        left_logic_factor = constructor(left_logic_factor, right_logic_factor)
+        return left_logic_factor
+
+    # additive_term = multiplicative_term, { ("+" | "-"), multiplicative_term } ;
+    def parse_additive(self):
+        if (left_logic_factor := self.parse_multiplicative()) is None:
+            return None
+
+        self.consume_token()
+        while (
+            constructor := self.add_or_minus_map.get(self.token.token_type)
+        ) is not None:
+            # position = self.token.position  # NOTE: not sure if i need it here
+            self.consume_token()
+            if (right_logic_factor := self.parse_multiplicative()) is None:
+                raise ValueError("brak expression po AND")
+            left_logic_factor = constructor(left_logic_factor, right_logic_factor)
+        return left_logic_factor
+
+    # multiplicative_term = unary_application, { ("*" | "/"), unary_application } ;
+    def parse_multiplicative(self):
+        if (left_logic_factor := self.parse_unary()) is None:
+            return None
+        while (
+            constructor := self.multiply_or_divide_map.get(self.token.token_type)
+        ) is not None:
+            # position = self.token.position  # NOTE: not sure if i need it here
+            self.consume_token()
+            if (right_logic_factor := self.parse_unary()) is None:
+                raise ValueError("brak expression po AND")
+            left_logic_factor = constructor(left_logic_factor, right_logic_factor)
+        return left_logic_factor
+
+    # unary_application = [ ("-" | "!") ], casting ;
+    def parse_unary(self):
+        if (constructor := self.unary_map.get(self.token.token_type)) is None:
+            return self.parse_casting()
+        casting = self.parse_casting()
+        return constructor(casting)
+
+    # casting = term, [ "->", type ] ;
+    def parse_casting(self):
+        if (term := self.parse_term()) is None:
+            return None
+
+        if self.token.token_type != Type.CAST:
+            return term
+
+        self.__must_be(Type.CAST)
+        type = self.parse_type_annotation()
+        return CastingExpression(term, type)
+
+    # term = integer | float | bool | string | object_access | "(", expression, ")";
+    def parse_term(self):
+        # NOTE: somehow i have to ensure what type is returned
+        match self.token.token_type:
+            case Type.IDENTIFIER:
+                return self.parse_object_access()
+            case Type.INTEGER:
+                return self.token.value
+            case Type.FLOAT:
+                return self.token.value
+            case Type.BOOL:
+                return self.token.value
+            case Type.STRING:
+                return self.token.value
+            case Type.PAREN_OPEN:
+                expression = self.parse_or_condition()
+                self.__must_be(Type.PAREN_CLOSE)
+                return expression
+
+    # object_access = identifier_or_call, {".", identifier_or_call}
+    def parse_object_access(self):
+        if (left_item := self.parse_identifier_or_call()) is None:
+            return None
+        while self.token.token_type == Type.DOT:
+            self.consume_token()
+            if (right_item := self.parse_identifier_or_call()) is None:
+                raise ValueError("brak item po '.'")
+            left_item = ItemExpression(left_item, right_item)
+        return left_item
+
+    # identifier_or_call = identifier, ["(", arguments, ")"]
+    def parse_identifier_or_call(self):
+        if self.token.token_type != Type.IDENTIFIER:
+            return None
+        # identifier = self.parse_identifier() NOTE: może potem zrobić
+        position = self.token.position
+        name = self.__must_be(Type.IDENTIFIER)
+        identifier = Identifier(name, position)
+
+        if self.token.token_type != Type.PAREN_OPEN:
+            return identifier
+        self.consume_token()
+        arguments = self.parse_arguments()
+        self.__must_be(Type.PAREN_CLOSE)
+        return FunctionCall(identifier, arguments)
 
     # if_statement = "if", expression, block, { "elif", expression, block }, ["else", block] ;
     def parse_if_statement(self):
@@ -122,11 +293,11 @@ class Parser:
             return None
         self.consume_token()
 
-        value = self.parse_expression()
+        value = self.parse_or_condition()
         block = self.parse_block()
 
         while self.token.token_type == Type.ELIF:
-            value = self.parse_expression()
+            value = self.parse_or_condition()
             block = self.parse_block()
 
         if self.token.token_type == Type.ELSE:
@@ -142,7 +313,4 @@ class Parser:
         pass
 
     def parse_return_statement(self):
-        pass
-
-    def parse_expression(self):
         pass
