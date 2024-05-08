@@ -1,4 +1,5 @@
 import pytest
+from projekt.src.parser.statements.block import Block
 from projekt.src.parser.statements.for_each_statement import ForEachStatement
 from projekt.src.parser.tests.test_utils import create_parser
 from projekt.src.parser.values.identifier_expression import Identifier
@@ -15,6 +16,7 @@ from projekt.src.parser.values.object_access_expression import ObjectAccessExpre
                 ObjectAccessExpression(
                     Identifier("function", (1, 10)), Identifier("args", (1, 19))
                 ),
+                Block([]),
             ),
         ),
     ],

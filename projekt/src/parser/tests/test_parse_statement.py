@@ -1,11 +1,13 @@
 import pytest
 from projekt.src.parser.statements.assign_statement import AssignStatement
+from projekt.src.parser.statements.block import Block
 from projekt.src.parser.statements.for_each_statement import ForEachStatement
 from projekt.src.parser.statements.fun_call_statement import FunCallStatement
 from projekt.src.parser.statements.if_statement import IfStatement
 from projekt.src.parser.statements.loop_statement import LoopStatement
 from projekt.src.parser.statements.return_statement import ReturnStatement
 from projekt.src.parser.tests.test_utils import create_parser
+from projekt.src.parser.type_annotations import TypeAnnotation
 from projekt.src.parser.values.greater_equal_expression import GreaterEqualExpression
 from projekt.src.parser.values.identifier_expression import Identifier
 from projekt.src.parser.values.integer import Integer
@@ -23,8 +25,8 @@ from projekt.src.parser.variable import Variable
         (
             "bool a = some_bool",
             Variable(
-                Identifier("a", (1, 6)),
-                "bool",
+                "a",
+                TypeAnnotation.BOOL,
                 value=Identifier("some_bool", (1, 10)),
                 position=(1, 1),
             ),
@@ -32,13 +34,17 @@ from projekt.src.parser.variable import Variable
         (
             """if a<2 { \nint b = 12 \n}""",
             IfStatement(
-                conditions=[LessExpresion(Identifier("a", (1, 4)), Integer(2, (1, 6)))],
-                if_instructions=[
-                    [
-                        Variable(
-                            Identifier("b", (2, 5)), "int", Integer(12, (2, 9)), (2, 1)
-                        )
-                    ]
+                conditions_instructions=[
+                    (
+                        LessExpresion(Identifier("a", (1, 4)), Integer(2, (1, 6))),
+                        Block(
+                            [
+                                Variable(
+                                    "b", TypeAnnotation.INT, Integer(12, (2, 9)), (2, 1)
+                                ),
+                            ]
+                        ),
+                    )
                 ],
                 else_instructions=[],
             ),
@@ -49,7 +55,13 @@ from projekt.src.parser.variable import Variable
                 GreaterEqualExpression(
                     Identifier("var1", (1, 7)), Integer(12, (1, 15))
                 ),
-                [AssignStatement(Identifier("var2", (1, 20)), Integer(10, (1, 27)))],
+                Block(
+                    [
+                        AssignStatement(
+                            Identifier("var2", (1, 20)), Integer(10, (1, 27))
+                        )
+                    ],
+                ),
             ),
         ),
         (
@@ -59,6 +71,7 @@ from projekt.src.parser.variable import Variable
                 ObjectAccessExpression(
                     Identifier("function", (1, 10)), Identifier("args", (1, 19))
                 ),
+                Block([]),
             ),
         ),
         (
@@ -68,7 +81,7 @@ from projekt.src.parser.variable import Variable
         (
             "fun(var1, 2)",
             FunCallStatement(
-                Identifier("fun", (1, 1)),
+                "fun",
                 arguments=[Identifier("var1", (1, 5)), Integer(2, (1, 11))],
             ),
         ),

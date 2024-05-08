@@ -38,7 +38,8 @@ class Type(Enum):
     FLOAT_TYPE = auto()
     STRING = auto()
     STRING_TYPE = auto()
-    BOOL = auto()
+    TRUE = auto()
+    FALSE = auto()
     BOOL_TYPE = auto()
     TYPE = auto()
     COMMA = auto()
@@ -58,8 +59,8 @@ class Symbol:
         "float": Type.FLOAT_TYPE,
         "str": Type.STRING_TYPE,
         "bool": Type.BOOL_TYPE,
-        "true": Type.BOOL,
-        "false": Type.BOOL,
+        "true": Type.TRUE,
+        "false": Type.FALSE,
         "while": Type.WHILE,
         "for": Type.FOR_EACH,
         "in": Type.IN,

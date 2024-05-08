@@ -23,4 +23,4 @@ class Variable(Node, Statement):
         return f"(variable: {self.identifier, self.type, self.value, self.position})"
 
     def accept(self, visitator):
-        return visitator.visit_function(self)
+        return visitator.visit_variable(self)

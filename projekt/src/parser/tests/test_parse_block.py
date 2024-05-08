@@ -1,6 +1,8 @@
 import pytest
+from projekt.src.parser.statements.block import Block
 from projekt.src.parser.statements.return_statement import ReturnStatement
 from projekt.src.parser.tests.test_utils import create_parser
+from projekt.src.parser.type_annotations import TypeAnnotation
 from projekt.src.parser.values.identifier_expression import Identifier
 from projekt.src.parser.values.string import String
 from projekt.src.parser.variable import Variable
@@ -11,15 +13,17 @@ from projekt.src.parser.variable import Variable
     [
         (
             '{\nstr name = "dawid"\nreturn name }',
-            [
-                Variable(
-                    Identifier("name", (2, 5)),
-                    type="str",
-                    value=String("dawid", (2, 12)),
-                    position=(2, 1),
-                ),
-                ReturnStatement(Identifier("name", (3, 8))),
-            ],
+            Block(
+                [
+                    Variable(
+                        "name",
+                        type=TypeAnnotation.STR,
+                        value=String("dawid", (2, 12)),
+                        position=(2, 1),
+                    ),
+                    ReturnStatement(Identifier("name", (3, 8))),
+                ],
+            ),
         ),
     ],
 )

@@ -2,9 +2,10 @@ from projekt.src.parser.statement import Statement
 
 
 class FunCallStatement(Statement):
-    def __init__(self, identifier, arguments):
+    def __init__(self, identifier, arguments, position=(0, 0)):
         self.identifier = identifier
         self.arguments = arguments
+        self.position = position
 
     def __eq__(self, other):
         if not isinstance(other, FunCallStatement):

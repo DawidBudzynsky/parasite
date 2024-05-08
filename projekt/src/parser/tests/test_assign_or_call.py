@@ -17,7 +17,7 @@ from projekt.src.parser.values.integer import Integer
         (
             "fun(var1, 2)",
             FunCallStatement(
-                Identifier("fun", (1, 1)),
+                "fun",
                 arguments=[Identifier("var1", (1, 5)), Integer(2, (1, 11))],
             ),
         ),

@@ -6,11 +6,14 @@ from projekt.src.parser.statements.aspect_block_statement import AspectBlock
 from projekt.src.parser.statements.aspect_statement import Aspect
 from projekt.src.parser.statements.assign_statement import AssignStatement
 from projekt.src.parser.statements.before_statement import BeforeStatement
+from projekt.src.parser.statements.block import Block
 from projekt.src.parser.statements.for_each_statement import ForEachStatement
 from projekt.src.parser.statements.fun_call_statement import FunCallStatement
 from projekt.src.parser.statements.if_statement import IfStatement
 from projekt.src.parser.statements.loop_statement import LoopStatement
+from projekt.src.parser.statements.program import Program
 from projekt.src.parser.statements.return_statement import ReturnStatement
+from projekt.src.parser.type_annotations import TypeAnnotation
 from projekt.src.parser.values.and_expression import AndExpression
 from projekt.src.parser.values.bool import Bool
 from projekt.src.parser.values.casting_expression import CastingExpression
@@ -18,7 +21,6 @@ from projekt.src.parser.values.divide_expression import DivideExpression
 from projekt.src.parser.function import FunctionDef
 from projekt.src.parser.values.equals_expression import EqualsExpression
 from projekt.src.parser.values.float import Float
-from projekt.src.parser.values.function_call import FunctionCall
 from projekt.src.parser.values.greater_equal_expression import GreaterEqualExpression
 from projekt.src.parser.values.greater_expression import GreaterExpression
 from projekt.src.parser.values.identifier_expression import Identifier
@@ -39,9 +41,11 @@ from projekt.src.parser.variable import Variable
 from projekt.src.parser.exceptions import (
     AspectArgument,
     AspectBodyError,
+    FunctionRedefinition,
     InvalidSyntax,
     MissingExpression,
     MissingStatement,
+    MissingTypeAnnotation,
 )
 
 
@@ -64,6 +68,9 @@ class Parser:
             Type.ASSIGNMENT: "=",
             Type.PAREN_OPEN: "(",
             Type.PAREN_CLOSE: ")",
+            Type.WHILE: "while",
+            Type.IN: "in",
+            Type.COMMA: ",",
         }
         self.addition_map = {
             Type.PLUS: AddExpresion,
@@ -86,6 +93,12 @@ class Parser:
             Type.NOT_EQUALS: NotEqualsExpression,
             Type.IS: IsExpression,
         }
+        self.true_values_map = {
+            Type.INTEGER_TYPE: TypeAnnotation.INT,
+            Type.FLOAT_TYPE: TypeAnnotation.FLOAT,
+            Type.STRING_TYPE: TypeAnnotation.STR,
+            Type.BOOL_TYPE: TypeAnnotation.BOOL,
+        }
         self.types = [
             Type.INTEGER_TYPE,
             Type.FLOAT_TYPE,
@@ -98,7 +111,9 @@ class Parser:
 
     def __add_to_dict(self, dictionary, key, value):
         if key in dictionary:
-            raise ValueError(f"Key '{key}' already exists in the dictionary.")
+            raise ValueError(
+                f"Error: Function redefinition, function name: {key}; [{self.token.position[0]}:{self.token.position[1]}]"
+            )
         else:
             dictionary[key] = value
 
@@ -115,35 +130,41 @@ class Parser:
     # program = { function_definition | aspect_definition } ;
     def parse_program(self):
         functions = {}
-        while fun_def := self.parse_fun_def():
-            try:
-                self.__add_to_dict(functions, fun_def.identifier, fun_def)
-            except ValueError as e:
-                print(e)
-        return functions
+        aspects = {}
+        while self.parse_fun_def(
+            lambda fun_def: self.__add_to_dict(functions, fun_def.identifier, fun_def)
+        ) or self.parse_aspect_definition(
+            lambda aspect_def: self.__add_to_dict(
+                aspects, aspect_def.identifier, aspect_def
+            )
+        ):
+            continue
+        self.consume_token()
+        self.__must_be(Type.ETX)
+        return Program(functions, aspects)
 
     # function_definition = identifier, "(", [ parameters ], ")", [ type ], block ;
-    def parse_fun_def(self) -> FunctionDef | None:
+    def parse_fun_def(self, handler):
         if self.token.token_type != Type.IDENTIFIER:
             return None
 
         # name = self.token.value
         position = self.token.position
-        name = self.__must_be(Type.IDENTIFIER)
+        name = self.token.value
+        self.consume_token()
 
-        self.__must_be(Type.PAREN_OPEN)
+        self.__must_be(Type.PAREN_OPEN)  # TODO: dodać kontekst errora
         parameters = self.parse_parameters()
         self.__must_be(Type.PAREN_CLOSE)
 
-        # NOTE: czy funkcja void powina mieć type None?
         type = self.parse_type_annotation()
         if (block := self.parse_block()) is None:
             raise MissingStatement(
                 missing_statement="block", position=self.token.position
             )
-        return FunctionDef(
-            Identifier(name, position), parameters, type, block, position
-        )
+
+        handler(FunctionDef(name, parameters, type, block, position))
+        return True
 
     # parameters = identifier, ":", type, { ",", identifier, ":", type } ;
     def parse_parameters(self) -> List | None:
@@ -171,54 +192,58 @@ class Parser:
         identifier = self.__must_be(Type.IDENTIFIER)
 
         self.__must_be(Type.COLON)
-        type = self.__must_be(*self.types)
-        return Variable(Identifier(identifier, position), type, position=position)
+        if (type := self.parse_type_annotation()) is None:
+            raise MissingTypeAnnotation(self.token.position)
+
+        return Variable(identifier, type, position=position)
 
     def parse_type_annotation(self):
-        if self.token.token_type not in self.types:
+        # if self.token.token_type not in self.types:
+        #     return None
+        if (value := self.true_values_map.get(self.token.token_type)) is None:
             return None
-        value = self.token.value
         self.consume_token()
         return value
 
     # block = "{", {statement}, "}" ;
     def parse_block(self):
-        self.__must_be(Type.BRACE_OPEN)
+        if self.token.token_type != Type.BRACE_OPEN:
+            return None
+        self.consume_token()
+
         statements = []
-        if (statement := self.parse_statement()) is None:
-            return statements  # NOTE: mozemy mieć pusty blok
-        statements.append(statement)
         while (statement := self.parse_statement()) is not None:
             statements.append(statement)
         self.__must_be(Type.BRACE_CLOSE)
-        return statements
+        return Block(statements)
 
     # statement = variable_declaration | if_statement | loop_statement | for_each_statement | assign_or_call | return_statement ;
     def parse_statement(self):
-        if (
-            statement := self.parse_variable_declaration()
+        return (
+            self.parse_variable_declaration()
             or self.parse_if_statement()
             or self.parse_loop_statement()
             or self.parse_for_each_statement()
             or self.parse_assign_or_call()
             or self.parse_return_statement()
-        ):
-            return statement
-        return None
+        )
 
     # variable_declaration = type, identifier, "=", expression ;
     def parse_variable_declaration(self):
         if self.token.token_type not in self.types:
             return None
-
         position = self.token.position
-        type = self.parse_type_annotation()
+        if (type := self.parse_type_annotation()) is None:
+            return None
 
-        identifier_pos = self.token.position
-        identifier = self.__must_be(Type.IDENTIFIER)
+        name = self.__must_be(Type.IDENTIFIER)
         self.__must_be(Type.ASSIGNMENT)
-        value = self.parse_expression()
-        return Variable(Identifier(identifier, identifier_pos), type, value, position)
+        if (value := self.parse_expression()) is None:
+            raise MissingExpression(
+                operator=self.symbols_map.get(Type.ASSIGNMENT),
+                position=self.token.position,
+            )
+        return Variable(name, type, value, position)
 
     # expression = conjunction, { "or", conjunction } ;
     def parse_expression(self):
@@ -227,8 +252,8 @@ class Parser:
         while self.token.token_type == Type.OR:
             self.consume_token()
             if (right_logic_factor := self.parse_conjunction()) is None:
-                raise MissingStatement(
-                    missing_statement=f"expression after [{self.symbols_map.get(Type.OR)}] operator",
+                raise MissingExpression(
+                    operator=self.symbols_map.get(Type.OR),
                     position=self.token.position,
                 )
             left_logic_factor = OrExpression(left_logic_factor, right_logic_factor)
@@ -239,18 +264,16 @@ class Parser:
         if (left_logic_factor := self.parse_relation()) is None:
             return None
         while self.token.token_type == Type.AND:
-            # position = self.token.position
             self.consume_token()
             if (right_logic_factor := self.parse_relation()) is None:
-                raise MissingStatement(
-                    missing_statement=f"expression after [{self.symbols_map.get(Type.AND)}] operator",
+                raise MissingExpression(
+                    operator=self.symbols_map.get(Type.AND),
                     position=self.token.position,
                 )
             left_logic_factor = AndExpression(left_logic_factor, right_logic_factor)
         return left_logic_factor
 
     # relation_term = additive_term, [ relation_operator, additive_term ] ;
-    # (2+2) < a
     def parse_relation(self):
         if (left_logic_factor := self.parse_additive()) is None:
             return None
@@ -289,7 +312,6 @@ class Parser:
     def parse_multiplicative(self):
         if (left_logic_factor := self.parse_unary()) is None:
             return None
-        # self.consume_token()
         while (
             constructor := self.multiply_or_divide_map.get(self.token.token_type)
         ) is not None:
@@ -319,9 +341,9 @@ class Parser:
 
         if self.token.token_type != Type.CAST:
             return term
-
-        self.__must_be(Type.CAST)
-        type = self.parse_type_annotation()
+        self.consume_token()
+        if (type := self.parse_type_annotation()) is None:
+            raise MissingTypeAnnotation(self.token.position)
         return CastingExpression(term, type)
 
     # term = integer | float | bool | string | object_access | "(", expression, ")";
@@ -337,15 +359,22 @@ class Parser:
             case Type.FLOAT:
                 self.consume_token()
                 return Float(value, position)
-            case Type.BOOL:
+            case Type.TRUE:
                 self.consume_token()
-                return Bool(value, position)
+                return Bool(True, position)
+            case Type.FALSE:
+                self.consume_token()
+                return Bool(False, position)
             case Type.STRING:
                 self.consume_token()
                 return String(value, position)
             case Type.PAREN_OPEN:
                 self.consume_token()
-                expression = self.parse_expression()
+                if (expression := self.parse_expression()) is None:
+                    raise MissingExpression(
+                        operator=self.symbols_map.get(Type.PAREN_OPEN),
+                        position=self.token.position,
+                    )
                 self.__must_be(Type.PAREN_CLOSE)
                 return expression
 
@@ -360,23 +389,26 @@ class Parser:
                     operator=self.symbols_map.get(Type.DOT),
                     position=self.token.position,
                 )
-            left_item = ObjectAccessExpression(left_item, right_item)
+            left_item = ObjectAccessExpression(
+                left_item, right_item
+            )  # TODO: może zmienić na to żeby obiekt miał parenta (raczej nie )
         return left_item
 
     # identifier_or_call = identifier, ["(", arguments, ")"]
     def parse_identifier_or_call(self):
         if self.token.token_type != Type.IDENTIFIER:
             return None
+
         position = self.token.position
-        name = self.__must_be(Type.IDENTIFIER)
-        identifier = Identifier(name, position)
+        name = self.token.value
+        self.consume_token()
 
         if self.token.token_type != Type.PAREN_OPEN:
-            return identifier
+            return Identifier(name, position)
         self.consume_token()
         arguments = self.parse_arguments()
         self.__must_be(Type.PAREN_CLOSE)
-        return FunctionCall(identifier, arguments)
+        return FunCallStatement(name, arguments, position)
 
     # arguments = [ expression, {",", expression } ] ;
     def parse_arguments(self):
@@ -400,16 +432,18 @@ class Parser:
             return None
         self.consume_token()
 
-        conditions = []
+        conditions_instructions = []
         if (expression := self.parse_expression()) is None:
             raise MissingExpression(
                 operator=self.symbols_map.get(Type.IF), position=self.token.position
             )
-        conditions.append(expression)
 
-        if_instructions = []
-        true_instructions = self.parse_block()  # NOTE: statements can be empty []
-        if_instructions.append(true_instructions)
+        if (true_instructions := self.parse_block()) is None:
+            raise MissingStatement(
+                missing_statement="block", position=self.token.position
+            )
+
+        conditions_instructions.append((expression, true_instructions))
 
         while self.token.token_type == Type.ELIF:
             self.consume_token()
@@ -418,26 +452,37 @@ class Parser:
                     operator=self.symbols_map.get(Type.ELIF),
                     position=self.token.position,
                 )
-            conditions.append(expression)
-            true_instructions = self.parse_block()
-            if_instructions.append(true_instructions)
+            if (true_instructions := self.parse_block()) is None:
+                raise MissingStatement(
+                    missing_statement="block", position=self.token.position
+                )
+            conditions_instructions.append((expression, true_instructions))
 
         else_instructions = []
         if self.token.token_type == Type.ELSE:
             self.consume_token()
-            else_instructions = self.parse_block()
-        return IfStatement(conditions, if_instructions, else_instructions)
+            if (else_instructions := self.parse_block()) is None:
+                raise MissingStatement(
+                    missing_statement="block", position=self.token.position
+                )
+        return IfStatement(conditions_instructions, else_instructions)
 
     # loop_statement = "while", expression, block ;
     def parse_loop_statement(self):
         if self.token.token_type != Type.WHILE:
             return None
         self.consume_token()
-        expression = self.parse_expression()
-        block = self.parse_block()
+        if (expression := self.parse_expression()) is None:
+            raise MissingExpression(
+                operator=self.symbols_map.get(Type.WHILE), position=self.token.position
+            )
+        if (block := self.parse_block()) is None:
+            raise MissingStatement(
+                missing_statement="block", position=self.token.position
+            )
         return LoopStatement(expression, block)
 
-    # for_each_statement = "for", idientifier, "in", expression, block ; NOTE: maybe expression here should be only object_access
+    # for_each_statement = "for", idientifier, "in", expression, block ;
     def parse_for_each_statement(self):
         if self.token.token_type != Type.FOR_EACH:
             return None
@@ -447,13 +492,19 @@ class Parser:
         identifier = self.__must_be(Type.IDENTIFIER)
         self.__must_be(Type.IN)
 
-        expression = self.parse_expression()
-        block = self.parse_block()
+        if (expression := self.parse_expression()) is None:
+            raise MissingExpression(
+                operator=self.symbols_map.get(Type.IN), position=self.token.position
+            )
+        if (block := self.parse_block()) is None:
+            raise MissingStatement(
+                missing_statement="block", position=self.token.position
+            )
         return ForEachStatement(
             Identifier(identifier, identifier_pos), expression, block
         )
 
-    # assign_or_call = identifier, [ "(", arguments, ")" ], [ "=", expression ] ;
+    # assign_or_call = identifier, ( "(", arguments, ")"  |  "=", expression ) ;
     def parse_assign_or_call(self):
         if self.token.token_type != Type.IDENTIFIER:
             return None
@@ -466,13 +517,14 @@ class Parser:
                 self.consume_token()
                 arguments = self.parse_arguments()
                 self.__must_be(Type.PAREN_CLOSE)
-                return FunCallStatement(
-                    Identifier(identifier, position),
-                    arguments,
-                )
+                return FunCallStatement(identifier, arguments, position)
             case Type.ASSIGNMENT:
                 self.consume_token()
-                expression = self.parse_expression()
+                if (expression := self.parse_expression()) is None:
+                    raise MissingExpression(
+                        operator=self.symbols_map.get(Type.ASSIGNMENT),
+                        position=self.token.position,
+                    )
                 return AssignStatement(Identifier(identifier, position), expression)
             case _:
                 raise InvalidSyntax(
@@ -492,17 +544,14 @@ class Parser:
         return ReturnStatement(expression)
 
     def identifier_or_regex(self):
-        match self.token.token_type:
-            case Type.IDENTIFIER:
-                return self.parse_identifier_or_call()
-            case Type.STRING:
-                return self.token.value
-            case _:
-                raise AspectArgument(position=self.token.position)
+        if result := self.parse_identifier_or_call():
+            return result
+        if self.token.token_type == Type.STRING:
+            return self.token.value
+        return None
 
-    # NOTE: idk if regex is best option
     # aspect_definition = "aspect", identifier, "(", (identifier | string) {"," (identifier | string), ")", aspect_block;
-    def parse_aspect_definition(self):
+    def parse_aspect_definition(self, handler):
         if self.token.token_type != Type.ASPECT:
             return None
         self.consume_token()
@@ -511,15 +560,23 @@ class Parser:
         self.__must_be(Type.PAREN_OPEN)
 
         aspect_args = []
-        aspect_args.append(self.identifier_or_regex())
+        if (identifier_or_regex := self.identifier_or_regex()) is None:
+            raise AspectArgument(position=self.token.position)
+        aspect_args.append(identifier_or_regex)
 
         while self.token.token_type == Type.COMMA:
             self.consume_token()
-            aspect_args.append(self.identifier_or_regex())
+            if (identifier_or_regex := self.identifier_or_regex()) is None:
+                raise MissingExpression(
+                    operator=self.symbols_map.get(Type.COMMA),
+                    position=self.token.position,
+                )
+            aspect_args.append(identifier_or_regex)
 
         self.__must_be(Type.PAREN_CLOSE)
         aspect_block = self.parse_aspect_block()
-        return Aspect(Identifier(aspect_name, aspect_pos), aspect_args, aspect_block)
+        handler(Aspect(aspect_name, aspect_args, aspect_block, aspect_pos))
+        return True
 
     # aspect_block = "{", { variable_declaration }, aspect_member "}" ;
     def parse_aspect_block(self):
@@ -527,24 +584,32 @@ class Parser:
         variables = []
         while (variable := self.parse_variable_declaration()) is not None:
             variables.append(variable)
-        aspect_members = self.parse_aspect_member()
+        if (aspect_members := self.parse_aspect_members()) is None:
+            raise AspectBodyError(position=self.token.position)
+        before_member, after_member = aspect_members
         self.__must_be(Type.BRACE_CLOSE)
-        return AspectBlock(variables, *aspect_members)
+        return AspectBlock(variables, before_member, after_member)
 
-    # aspect_member = ( before_statement, [ after_statement ] ) |  after_statement) ;  NOTE:changes in EBNF
-    def parse_aspect_member(self):
-        if (before_statement := self.parse_before_statement()) is None:
-            if (after_statement := self.parse_after_statement()) is None:
-                raise AspectBodyError(position=self.token.position)
-        after_statement = self.parse_after_statement()
-        return before_statement, after_statement
+    # aspect_members = ( before_statement, [ after_statement ] ) |  after_statement) ;
+    def parse_aspect_members(self):
+        if before_statement := self.parse_before_statement():
+            after_statement = self.parse_after_statement()
+            return before_statement, after_statement
+
+        if after_statement := self.parse_after_statement():
+            before_statement = self.parse_before_statement()
+            return before_statement, after_statement
+        return None
 
     # before_statement = "before", block ;
     def parse_before_statement(self):
         if self.token.token_type != Type.BEFORE:
             return None
         self.consume_token()
-        block = self.parse_block()
+        if (block := self.parse_block()) is None:
+            raise MissingStatement(
+                missing_statement="block", position=self.token.position
+            )
         return BeforeStatement(block)
 
     # after_statement = "after", block ;
@@ -552,5 +617,8 @@ class Parser:
         if self.token.token_type != Type.AFTER:
             return None
         self.consume_token()
-        block = self.parse_block()
+        if (block := self.parse_block()) is None:
+            raise MissingStatement(
+                missing_statement="block", position=self.token.position
+            )
         return AfterStatement(block)

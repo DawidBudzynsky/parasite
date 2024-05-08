@@ -1,5 +1,7 @@
 import pytest
 from projekt.src.parser.tests.test_utils import create_parser
+from projekt.src.parser.type_annotations import TypeAnnotation
+from projekt.src.parser.values.bool import Bool
 from projekt.src.parser.values.identifier_expression import Identifier
 from projekt.src.parser.values.integer import Integer
 from projekt.src.parser.values.multiply_expression import MultiplyExpression
@@ -13,8 +15,8 @@ from projekt.src.parser.variable import Variable
         (
             "int a = 1 * 3",
             Variable(
-                Identifier("a", (1, 5)),
-                "int",
+                "a",
+                TypeAnnotation.INT,
                 value=MultiplyExpression(Integer(1, (1, 9)), Integer(3, (1, 13))),
                 position=(1, 1),
             ),
@@ -22,8 +24,8 @@ from projekt.src.parser.variable import Variable
         (
             "int a = 1 + 2",
             Variable(
-                Identifier("a", (1, 5)),
-                "int",
+                "a",
+                TypeAnnotation.INT,
                 value=AddExpresion(Integer(1, (1, 9)), Integer(2, (1, 13))),
                 position=(1, 1),
             ),
@@ -31,8 +33,8 @@ from projekt.src.parser.variable import Variable
         (
             "int a = 1 * 2 + 1",
             Variable(
-                Identifier("a", (1, 5)),
-                "int",
+                "a",
+                TypeAnnotation.INT,
                 value=AddExpresion(
                     MultiplyExpression(Integer(1, (1, 9)), Integer(2, (1, 13))),
                     Integer(1, (1, 17)),
@@ -43,8 +45,8 @@ from projekt.src.parser.variable import Variable
         (
             "int a = 3 * (2 + 2)",
             Variable(
-                Identifier("a", (1, 5)),
-                "int",
+                "a",
+                TypeAnnotation.INT,
                 value=MultiplyExpression(
                     Integer(3, (1, 9)),
                     AddExpresion(Integer(2, (1, 14)), Integer(2, (1, 18))),
@@ -55,9 +57,27 @@ from projekt.src.parser.variable import Variable
         (
             "bool a = some_bool",
             Variable(
-                Identifier("a", (1, 6)),
-                "bool",
+                "a",
+                TypeAnnotation.BOOL,
                 value=Identifier("some_bool", (1, 10)),
+                position=(1, 1),
+            ),
+        ),
+        (
+            "bool a = true",
+            Variable(
+                "a",
+                TypeAnnotation.BOOL,
+                value=Bool(True, (1, 10)),
+                position=(1, 1),
+            ),
+        ),
+        (
+            "bool a = false",
+            Variable(
+                "a",
+                TypeAnnotation.BOOL,
+                value=Bool(False, (1, 10)),
                 position=(1, 1),
             ),
         ),

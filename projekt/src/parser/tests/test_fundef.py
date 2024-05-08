@@ -1,7 +1,9 @@
 import pytest
 from projekt.src.parser.function import FunctionDef
+from projekt.src.parser.statements.block import Block
 from projekt.src.parser.statements.return_statement import ReturnStatement
 from projekt.src.parser.tests.test_utils import create_parser
+from projekt.src.parser.type_annotations import TypeAnnotation
 from projekt.src.parser.values.identifier_expression import Identifier
 from projekt.src.parser.variable import Variable
 
@@ -12,10 +14,12 @@ from projekt.src.parser.variable import Variable
         (
             "func(num: int) int {\nreturn num }",
             FunctionDef(
-                Identifier("func", (1, 1)),
-                [Variable(Identifier("num", (1, 6)), "int", position=(1, 6))],
-                "int",
-                [ReturnStatement(Identifier("num", (2, 8)))],
+                "func",
+                [Variable("num", TypeAnnotation.INT, position=(1, 6))],
+                TypeAnnotation.INT,
+                Block(
+                    [ReturnStatement(Identifier("num", (2, 8)))],
+                ),
                 (1, 1),
             ),
         ),
@@ -23,5 +27,7 @@ from projekt.src.parser.variable import Variable
 )
 def test_fun_def(input_str, expected):
     parser = create_parser(input_str)
-    expression = parser.parse_fun_def()
-    assert expression == expected
+    expressions = []
+    # __import__("pdb").set_trace()
+    parser.parse_fun_def(expressions.append)
+    assert expressions[0] == expected
