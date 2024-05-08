@@ -20,3 +20,6 @@ class FunctionDef(Node):
             and self.type == other.type
             and self.block == other.block
         )
+
+    def __repr__(self) -> str:
+        return f"(funcDef: {self.identifier}, {self.parameters}, {self.type}, {self.block})"

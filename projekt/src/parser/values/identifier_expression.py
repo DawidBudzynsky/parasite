@@ -14,5 +14,8 @@ class Identifier(Node):
             and self.position == other.position
         )
 
+    def __repr__(self) -> str:
+        return f"(identifier: {self.name, self.position})"
+
     def accept(self, visitator):
         return visitator.visit_identifier(self)

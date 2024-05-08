@@ -5,5 +5,8 @@ class IsExpression(OperatorExpression):
     def __init__(self, left_expression=None, right_expression=None):
         super().__init__(left_expression, right_expression)
 
+    def __repr__(self) -> str:
+        return f"({self.left_expression} is {self.right_expression})"
+
     def accept(self, visitator):
         return visitator.visit_is_expr(self)

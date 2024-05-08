@@ -13,5 +13,8 @@ class CastingExpression(Expression):
             and self.type == other.type
         )
 
+    def __repr__(self) -> str:
+        return f"({self.term} -> {self.type})"
+
     def accept(self, visitator):
         return visitator.visit_cast_expr(self)

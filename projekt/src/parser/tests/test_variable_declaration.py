@@ -1,5 +1,7 @@
 import pytest
 from projekt.src.parser.tests.test_utils import create_parser
+from projekt.src.parser.values.identifier_expression import Identifier
+from projekt.src.parser.values.integer import Integer
 from projekt.src.parser.values.multiply_expression import MultiplyExpression
 from projekt.src.parser.values.plus_expression import AddExpresion
 from projekt.src.parser.variable import Variable
@@ -10,40 +12,52 @@ from projekt.src.parser.variable import Variable
     [
         (
             "int a = 1 * 3",
-            Variable("a", "int", value=MultiplyExpression(1, 3), position=(1, 1)),
+            Variable(
+                Identifier("a", (1, 5)),
+                "int",
+                value=MultiplyExpression(Integer(1, (1, 9)), Integer(3, (1, 13))),
+                position=(1, 1),
+            ),
         ),
         (
             "int a = 1 + 2",
-            Variable("a", "int", value=AddExpresion(1, 2), position=(1, 1)),
-        ),
-        (
-            "int a = 1 + 2",
-            Variable("a", "int", value=AddExpresion(1, 2), position=(1, 1)),
+            Variable(
+                Identifier("a", (1, 5)),
+                "int",
+                value=AddExpresion(Integer(1, (1, 9)), Integer(2, (1, 13))),
+                position=(1, 1),
+            ),
         ),
         (
             "int a = 1 * 2 + 1",
             Variable(
-                "a",
+                Identifier("a", (1, 5)),
                 "int",
-                value=AddExpresion(MultiplyExpression(1, 2), 1),
+                value=AddExpresion(
+                    MultiplyExpression(Integer(1, (1, 9)), Integer(2, (1, 13))),
+                    Integer(1, (1, 17)),
+                ),
                 position=(1, 1),
             ),
         ),
         (
             "int a = 3 * (2 + 2)",
             Variable(
-                "a",
+                Identifier("a", (1, 5)),
                 "int",
-                value=MultiplyExpression(3, AddExpresion(2, 2)),
+                value=MultiplyExpression(
+                    Integer(3, (1, 9)),
+                    AddExpresion(Integer(2, (1, 14)), Integer(2, (1, 18))),
+                ),
                 position=(1, 1),
             ),
         ),
         (
             "bool a = some_bool",
             Variable(
-                "a",
+                Identifier("a", (1, 6)),
                 "bool",
-                value="some_bool",
+                value=Identifier("some_bool", (1, 10)),
                 position=(1, 1),
             ),
         ),

@@ -1,4 +1,3 @@
-from _pytest.main import pytest_collect_directory
 import pytest
 from projekt.src.parser.tests.test_utils import create_parser
 from projekt.src.parser.values.function_call import FunctionCall

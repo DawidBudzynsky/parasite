@@ -30,7 +30,6 @@ class Type(Enum):
     BEFORE = auto()
     AFTER = auto()
     RETURN = auto()
-    PRINT = auto()
     COMMENT = auto()
     IDENTIFIER = auto()
     INTEGER = auto()
@@ -72,7 +71,6 @@ class Symbol:
         "before": Type.BEFORE,
         "after": Type.AFTER,
         "return": Type.RETURN,
-        "print": Type.PRINT,
         "and": Type.AND,
         "or": Type.OR,
         "->": Type.CAST,

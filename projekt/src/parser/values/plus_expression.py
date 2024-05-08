@@ -12,5 +12,8 @@ class AddExpresion(OperatorExpression):
             and self.right_expression == other.right_expression
         )
 
+    def __repr__(self) -> str:
+        return f"({self.left_expression} + {self.right_expression})"
+
     def accept(self, visitator):
         return visitator.visit_add_expr(self)
