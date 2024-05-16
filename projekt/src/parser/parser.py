@@ -39,11 +39,31 @@ from projekt.src.parser.values.plus_expression import AddExpresion
 from projekt.src.parser.values.string import String
 from projekt.src.parser.variable import Variable
 from projekt.src.parser.exceptions import (
+    ASPECT_BLOCK_MISSING,
+    ASPECT_BLOCK_NOT_CLOSED,
+    ASPECT_DEF_NOT_CLOSED,
+    ASPECT_DEF_PAREN_OPEN_MISSING,
+    ASPECT_MISSING_NAME,
+    ASSIGN_OR_CALL_MISSING,
+    BLOCK_NOT_CLOSED,
+    ETX_MISSING,
+    EXPREESION_NOT_CLOSED,
+    FOR_EACH_IDENTIFIER,
+    FOR_EACH_IN_MISSING,
+    FUN_CALL_NOT_CLOSED,
+    FUN_DEF_PAREN_CLOSE_MISSING,
+    FUN_DEF_PAREN_OPEN_MISSING,
+    MISSING_IDENTIFIER_AFTER_COMMA,
+    PARAMETER_COLON_MISSING,
+    PARAMETER_IDENTIFIER,
+    VAR_DECLARATION_COLON,
+    VAR_DECLARATION_IDENTIFIER,
     AspectArgument,
     AspectBodyError,
     AspectRedefinition,
     FunctionRedefinition,
     InvalidSyntax,
+    InvalidSyntaxVerbose,
     MissingExpression,
     MissingStatement,
     MissingTypeAnnotation,
@@ -116,9 +136,10 @@ class Parser:
         else:
             dictionary[key] = value
 
-    def __must_be(self, *types):
+    def __must_be(self, *types, message):
         if self.token.token_type not in types:
             raise InvalidSyntax(
+                message=message,
                 position=self.token.position,
                 expected_type=self.symbols_map.get(*types),
             )
@@ -151,7 +172,7 @@ class Parser:
         ):
             continue
         self.consume_token()
-        self.__must_be(Type.ETX)
+        self.__must_be(Type.ETX, message=ETX_MISSING)
         return Program(functions, aspects)
 
     # function_definition = identifier, "(", [ parameters ], ")", [ type ], block ;
@@ -164,9 +185,15 @@ class Parser:
         name = self.token.value
         self.consume_token()
 
-        self.__must_be(Type.PAREN_OPEN)  # TODO: dodać kontekst errora
+        self.__must_be(
+            Type.PAREN_OPEN,
+            message=FUN_DEF_PAREN_OPEN_MISSING,
+        )
         parameters = self.parse_parameters()
-        self.__must_be(Type.PAREN_CLOSE)
+        self.__must_be(
+            Type.PAREN_CLOSE,
+            message=FUN_DEF_PAREN_CLOSE_MISSING,
+        )
 
         type = self.parse_type_annotation()
         if (block := self.parse_block()) is None:
@@ -186,10 +213,9 @@ class Parser:
         while self.token.token_type == Type.COMMA:
             self.consume_token()
             if (parameter := self.parse_parameter()) is None:
-                raise InvalidSyntax(
+                raise InvalidSyntaxVerbose(
+                    message=MISSING_IDENTIFIER_AFTER_COMMA,
                     position=self.token.position,
-                    expected_type=Type.IDENTIFIER,
-                    given_type=self.token.token_type,
                 )
             parameters.append(parameter)
         return parameters
@@ -200,17 +226,15 @@ class Parser:
             return None
 
         position = self.token.position  # idk moze niepotrzebne
-        identifier = self.__must_be(Type.IDENTIFIER)
+        identifier = self.__must_be(Type.IDENTIFIER, message=PARAMETER_IDENTIFIER)
 
-        self.__must_be(Type.COLON)
+        self.__must_be(Type.COLON, message=PARAMETER_COLON_MISSING)
         if (type := self.parse_type_annotation()) is None:
             raise MissingTypeAnnotation(self.token.position)
 
         return Variable(identifier, type, position=position)
 
     def parse_type_annotation(self):
-        # if self.token.token_type not in self.types:
-        #     return None
         if (value := self.true_values_map.get(self.token.token_type)) is None:
             return None
         self.consume_token()
@@ -225,7 +249,7 @@ class Parser:
         statements = []
         while (statement := self.parse_statement()) is not None:
             statements.append(statement)
-        self.__must_be(Type.BRACE_CLOSE)
+        self.__must_be(Type.BRACE_CLOSE, message=BLOCK_NOT_CLOSED)
         return Block(statements)
 
     # statement = variable_declaration | if_statement | loop_statement | for_each_statement | assign_or_call | return_statement ;
@@ -247,8 +271,8 @@ class Parser:
         if (type := self.parse_type_annotation()) is None:
             return None
 
-        name = self.__must_be(Type.IDENTIFIER)
-        self.__must_be(Type.ASSIGNMENT)
+        name = self.__must_be(Type.IDENTIFIER, message=VAR_DECLARATION_IDENTIFIER)
+        self.__must_be(Type.ASSIGNMENT, message=VAR_DECLARATION_COLON)
         if (value := self.parse_expression()) is None:
             raise MissingExpression(
                 operator=self.symbols_map.get(Type.ASSIGNMENT),
@@ -386,7 +410,7 @@ class Parser:
                         operator=self.symbols_map.get(Type.PAREN_OPEN),
                         position=self.token.position,
                     )
-                self.__must_be(Type.PAREN_CLOSE)
+                self.__must_be(Type.PAREN_CLOSE, message=EXPREESION_NOT_CLOSED)
                 return expression
 
     # object_access = identifier_or_call, {".", identifier_or_call}
@@ -418,7 +442,7 @@ class Parser:
             return Identifier(name, position)
         self.consume_token()
         arguments = self.parse_arguments()
-        self.__must_be(Type.PAREN_CLOSE)
+        self.__must_be(Type.PAREN_CLOSE, message=FUN_CALL_NOT_CLOSED)
         return FunCallStatement(name, arguments, position)
 
     # arguments = [ expression, {",", expression } ] ;
@@ -500,8 +524,8 @@ class Parser:
         self.consume_token()
 
         identifier_pos = self.token.position
-        identifier = self.__must_be(Type.IDENTIFIER)
-        self.__must_be(Type.IN)
+        identifier = self.__must_be(Type.IDENTIFIER, message=FOR_EACH_IDENTIFIER)
+        self.__must_be(Type.IN, message=FOR_EACH_IN_MISSING)
 
         if (expression := self.parse_expression()) is None:
             raise MissingExpression(
@@ -527,7 +551,7 @@ class Parser:
             case Type.PAREN_OPEN:
                 self.consume_token()
                 arguments = self.parse_arguments()
-                self.__must_be(Type.PAREN_CLOSE)
+                self.__must_be(Type.PAREN_CLOSE, message=FUN_CALL_NOT_CLOSED)
                 return FunCallStatement(identifier, arguments, position)
             case Type.ASSIGNMENT:
                 self.consume_token()
@@ -538,12 +562,13 @@ class Parser:
                     )
                 return AssignStatement(Identifier(identifier, position), expression)
             case _:
-                raise InvalidSyntax(
-                    position=self.token.position,
-                    expected_type=[
+                raise InvalidSyntaxVerbose(
+                    message=ASSIGN_OR_CALL_MISSING
+                    % (
                         self.symbols_map.get(Type.PAREN_OPEN),
                         self.symbols_map.get(Type.ASSIGNMENT),
-                    ],
+                    ),
+                    position=self.token.position,
                 )
 
     # return_statement = "return", [ expression ] ;
@@ -567,8 +592,8 @@ class Parser:
             return None
         self.consume_token()
         aspect_pos = self.token.position
-        aspect_name = self.__must_be(Type.IDENTIFIER)
-        self.__must_be(Type.PAREN_OPEN)
+        aspect_name = self.__must_be(Type.IDENTIFIER, message=ASPECT_MISSING_NAME)
+        self.__must_be(Type.PAREN_OPEN, message=ASPECT_DEF_PAREN_OPEN_MISSING)
 
         aspect_args = []
         if (identifier_or_regex := self.identifier_or_regex()) is None:
@@ -584,21 +609,21 @@ class Parser:
                 )
             aspect_args.append(identifier_or_regex)
 
-        self.__must_be(Type.PAREN_CLOSE)
+        self.__must_be(Type.PAREN_CLOSE, message=ASPECT_DEF_NOT_CLOSED)
         aspect_block = self.parse_aspect_block()
         handler(Aspect(aspect_name, aspect_args, aspect_block, aspect_pos))
         return True
 
     # aspect_block = "{", { variable_declaration }, aspect_member "}" ;
     def parse_aspect_block(self):
-        self.__must_be(Type.BRACE_OPEN)
+        self.__must_be(Type.BRACE_OPEN, message=ASPECT_BLOCK_MISSING)
         variables = []
         while (variable := self.parse_variable_declaration()) is not None:
             variables.append(variable)
         if (aspect_members := self.parse_aspect_members()) is None:
             raise AspectBodyError(position=self.token.position)
         before_member, after_member = aspect_members
-        self.__must_be(Type.BRACE_CLOSE)
+        self.__must_be(Type.BRACE_CLOSE, message=ASPECT_BLOCK_NOT_CLOSED)
         return AspectBlock(variables, before_member, after_member)
 
     # aspect_members = ( before_statement, [ after_statement ] ) |  after_statement) ;
