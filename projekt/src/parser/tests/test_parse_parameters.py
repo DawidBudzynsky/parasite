@@ -1,6 +1,9 @@
 import pytest
 from projekt.src.lexer.tokens import Type
-from projekt.src.parser.exceptions import InvalidSyntax
+from projekt.src.parser.exceptions import (
+    MISSING_IDENTIFIER_AFTER_COMMA,
+    InvalidSyntaxVerbose,
+)
 from projekt.src.parser.tests.test_utils import create_parser
 from projekt.src.parser.type_annotations import TypeAnnotation
 from projekt.src.parser.values.identifier_expression import Identifier
@@ -40,10 +43,9 @@ def test_parse_parameters_multiple():
     [
         (
             "number: int, int",
-            InvalidSyntax(
+            InvalidSyntaxVerbose(
+                message=MISSING_IDENTIFIER_AFTER_COMMA,
                 position=(1, 14),
-                expected_type=Type.IDENTIFIER,
-                given_type=Type.INTEGER_TYPE,
             ),
         ),
     ],
