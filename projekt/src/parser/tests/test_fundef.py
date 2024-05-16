@@ -28,6 +28,5 @@ from projekt.src.parser.variable import Variable
 def test_fun_def(input_str, expected):
     parser = create_parser(input_str)
     expressions = []
-    # __import__("pdb").set_trace()
     parser.parse_fun_def(expressions.append)
     assert expressions[0] == expected
