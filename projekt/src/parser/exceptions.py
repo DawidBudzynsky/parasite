@@ -35,6 +35,14 @@ FOR_EACH_IDENTIFIER = "Define what identifier to iterate over"
 FOR_EACH_IN_MISSING = "Use [in] after identifier in for loop"
 
 
+class InvalidSyntaxVerbose(Exception):
+    def __init__(self, message, position=(0, 0)):
+        message = VERBOSE % (message, position[0], position[1])
+        super().__init__(message)
+        self.message = message
+        self.position = position
+
+
 class FunctionRedefinition(Exception):
     def __init__(self, function_name, position=(0, 0)):
         message = FUNC_REDEFINITION % (function_name, position[0], position[1])
