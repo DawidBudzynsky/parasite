@@ -1,5 +1,10 @@
 import pytest
-from projekt.src.parser.exceptions import AspectArgument, AspectBodyError, InvalidSyntax
+from projekt.src.parser.exceptions import (
+    ASPECT_DEF_PAREN_OPEN_MISSING,
+    AspectArgument,
+    AspectBodyError,
+    InvalidSyntax,
+)
 from projekt.src.parser.statements.after_statement import AfterStatement
 from projekt.src.parser.statements.before_statement import BeforeStatement
 from projekt.src.parser.statements.aspect_block_statement import AspectBlock
@@ -129,6 +134,7 @@ def test_aspect_definition(input_str, expected):
         (
             "aspect logging_aspect{}",
             InvalidSyntax(
+                message=ASPECT_DEF_PAREN_OPEN_MISSING,
                 position=(1, 22),
                 expected_type="(",
             ),
