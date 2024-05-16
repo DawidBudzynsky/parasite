@@ -1,5 +1,11 @@
 import pytest
-from projekt.src.parser.exceptions import InvalidSyntax
+from projekt.src.parser.exceptions import (
+    ASSIGN_OR_CALL_MISSING,
+    FUN_CALL_NOT_CLOSED,
+    InvalidSyntax,
+    InvalidSyntaxVerbose,
+    MissingExpression,
+)
 from projekt.src.parser.statements.assign_statement import AssignStatement
 from projekt.src.parser.statements.fun_call_statement import FunCallStatement
 from projekt.src.parser.tests.test_utils import create_parser
@@ -34,16 +40,24 @@ def test_assign_or_call(input_str, expected):
     [
         (
             "fun*",
-            InvalidSyntax(
+            InvalidSyntaxVerbose(
+                message=ASSIGN_OR_CALL_MISSING % ("(", "="),
                 position=(1, 4),
-                expected_type=["(", "="],
             ),
         ),
         (
             "fun(fun2",
             InvalidSyntax(
+                message=FUN_CALL_NOT_CLOSED,
                 position=(1, 9),
                 expected_type=")",
+            ),
+        ),
+        (
+            "fun = ",
+            MissingExpression(
+                operator="=",
+                position=(1, 7),
             ),
         ),
     ],
