@@ -78,15 +78,11 @@ class AspectBodyError(Exception):
 
 
 class InvalidSyntax(Exception):
-    def __init__(
-        self, position=(0, 0), expected_type=None, given_type=None, given_value=None
-    ):
-        message = INVALID_SYNTAX % (expected_type, given_type, position[0], position[1])
+    def __init__(self, message, position=(0, 0), expected_type=None):
+        message = INVALID_SYNTAX % (expected_type, message, position[0], position[1])
         super().__init__(message)
         self.position = position
         self.expected_type = expected_type
-        self.given_type = given_type
-        self.given_value = given_value
 
 
 class MissingTypeAnnotation(Exception):
