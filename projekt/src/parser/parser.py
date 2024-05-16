@@ -41,6 +41,7 @@ from projekt.src.parser.variable import Variable
 from projekt.src.parser.exceptions import (
     AspectArgument,
     AspectBodyError,
+    AspectRedefinition,
     FunctionRedefinition,
     InvalidSyntax,
     MissingExpression,
@@ -109,11 +110,9 @@ class Parser:
     def consume_token(self):
         self.token = self.lexer.build_next_token()
 
-    def __add_to_dict(self, dictionary, key, value):
+    def __add_to_dict(self, dictionary, key, value, exception):
         if key in dictionary:
-            raise ValueError(
-                f"Error: Function redefinition, function name: {key}; [{self.token.position[0]}:{self.token.position[1]}]"
-            )
+            raise exception
         else:
             dictionary[key] = value
 
@@ -132,10 +131,22 @@ class Parser:
         functions = {}
         aspects = {}
         while self.parse_fun_def(
-            lambda fun_def: self.__add_to_dict(functions, fun_def.identifier, fun_def)
+            lambda fun_def: self.__add_to_dict(
+                functions,
+                fun_def.identifier,
+                fun_def,
+                exception=FunctionRedefinition(
+                    function_name=fun_def.identifier, position=fun_def.position
+                ),
+            )
         ) or self.parse_aspect_definition(
             lambda aspect_def: self.__add_to_dict(
-                aspects, aspect_def.identifier, aspect_def
+                aspects,
+                aspect_def.identifier,
+                aspect_def,
+                exception=AspectRedefinition(
+                    aspect_def.identifier, aspect_def.position
+                ),
             )
         ):
             continue

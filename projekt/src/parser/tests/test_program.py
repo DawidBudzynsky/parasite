@@ -1,4 +1,5 @@
 import pytest
+from projekt.src.parser.exceptions import AspectRedefinition, FunctionRedefinition
 from projekt.src.parser.function import FunctionDef
 from projekt.src.parser.statements.aspect_block_statement import AspectBlock
 from projekt.src.parser.statements.aspect_statement import Aspect
@@ -62,3 +63,29 @@ def test_program(input_str, expected):
     parser = create_parser(input_str)
     program = parser.parse_program()
     assert program == expected
+
+
+@pytest.mark.parametrize(
+    "input_str, expected",
+    [
+        (
+            "fun1(){\nprint(1)\n}\nfun1(){\nprint(2)\n}",
+            FunctionRedefinition(function_name="fun1", position=(4, 1)),
+        ),
+        (
+            "fun1(){\nprint(1)\n}\nfun1(arg1: int, arg2: str){\nprint(2)\n}",
+            FunctionRedefinition(function_name="fun1", position=(4, 1)),
+        ),
+        (
+            'aspect asp(fun1){\nbefore{print("aspect before triggered")}\n}\naspect asp(fun2){\nbefore{print("aspect before triggered")}\n}',
+            AspectRedefinition(aspect_name="asp", position=(4, 8)),
+        ),
+    ],
+)
+def test_aspect_definition_fails(input_str, expected):
+    with pytest.raises(Exception) as e_info:
+        parser = create_parser(input_str)
+        parser.parse_program()
+
+    assert isinstance(e_info.value, type(expected))
+    assert str(e_info.value) == str(expected)
