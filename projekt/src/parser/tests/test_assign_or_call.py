@@ -18,7 +18,9 @@ from projekt.src.parser.values.integer import Integer
     [
         (
             "a = 5",
-            AssignStatement(Identifier("a", (1, 1)), Integer(5, (1, 5))),
+            AssignStatement(
+                Identifier("a", (1, 1)), Integer(5, (1, 5)), position=(1, 1)
+            ),
         ),
         (
             "fun(var1, 2)",

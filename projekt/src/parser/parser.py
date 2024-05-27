@@ -265,8 +265,6 @@ class Parser:
 
     # variable_declaration = type, identifier, "=", expression ;
     def parse_variable_declaration(self):
-        if self.token.token_type not in self.types:
-            return None
         position = self.token.position
         if (type := self.parse_type_annotation()) is None:
             return None
@@ -366,7 +364,8 @@ class Parser:
             return self.parse_casting()
         self.consume_token()
         position = self.token.position
-        casting = self.parse_casting()
+        if (casting := self.parse_casting()) is None:
+            raise ValueError("fds")  # TODO: uzupelnij
         return constructor(casting, position)
 
     # casting = term, [ "->", type ] ;
@@ -424,9 +423,7 @@ class Parser:
                     operator=self.symbols_map.get(Type.DOT),
                     position=self.token.position,
                 )
-            left_item = ObjectAccessExpression(
-                left_item, right_item
-            )  # TODO: może zmienić na to żeby obiekt miał parenta (raczej nie )
+            left_item = ObjectAccessExpression(left_item, right_item)
         return left_item
 
     # identifier_or_call = identifier, ["(", arguments, ")"]
@@ -465,6 +462,7 @@ class Parser:
     def parse_if_statement(self):
         if self.token.token_type != Type.IF:
             return None
+        position = self.token.position
         self.consume_token()
 
         conditions_instructions = []
@@ -500,12 +498,15 @@ class Parser:
                 raise MissingStatement(
                     missing_statement="block", position=self.token.position
                 )
-        return IfStatement(conditions_instructions, else_instructions)
+        return IfStatement(
+            conditions_instructions, else_instructions, position=position
+        )
 
     # loop_statement = "while", expression, block ;
     def parse_loop_statement(self):
         if self.token.token_type != Type.WHILE:
             return None
+        position = self.token.position
         self.consume_token()
         if (expression := self.parse_expression()) is None:
             raise MissingExpression(
@@ -515,7 +516,7 @@ class Parser:
             raise MissingStatement(
                 missing_statement="block", position=self.token.position
             )
-        return LoopStatement(expression, block)
+        return LoopStatement(expression, block, position=position)
 
     # for_each_statement = "for", idientifier, "in", expression, block ;
     def parse_for_each_statement(self):
@@ -560,7 +561,9 @@ class Parser:
                         operator=self.symbols_map.get(Type.ASSIGNMENT),
                         position=self.token.position,
                     )
-                return AssignStatement(Identifier(identifier, position), expression)
+                return AssignStatement(
+                    Identifier(identifier, position), expression, position=position
+                )
             case _:
                 raise InvalidSyntaxVerbose(
                     message=ASSIGN_OR_CALL_MISSING

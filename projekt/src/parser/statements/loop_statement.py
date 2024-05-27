@@ -2,9 +2,10 @@ from projekt.src.parser.statement import Statement
 
 
 class LoopStatement(Statement):
-    def __init__(self, expression, block=[]):
+    def __init__(self, expression, block=[], position=(0, 0)):
         self.expression = expression
         self.block = block
+        self.position = position
 
     def __eq__(self, other):
         if not isinstance(other, LoopStatement):

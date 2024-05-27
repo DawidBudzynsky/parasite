@@ -1,6 +1,7 @@
 from projekt.src.parser.statement import Statement
 
 
+# TODO: position
 class BeforeStatement(Statement):
     def __init__(self, block):
         self.block = block

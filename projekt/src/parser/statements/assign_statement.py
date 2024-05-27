@@ -2,9 +2,10 @@ from projekt.src.parser.statement import Statement
 
 
 class AssignStatement(Statement):
-    def __init__(self, identifier, expression):
+    def __init__(self, identifier, expression, position):
         self.identifier = identifier
         self.expression = expression
+        self.position = position
 
     def __eq__(self, other):
         if not isinstance(other, AssignStatement):

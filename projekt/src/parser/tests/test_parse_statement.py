@@ -47,6 +47,7 @@ from projekt.src.parser.variable import Variable
                     )
                 ],
                 else_instructions=[],
+                position=(1, 1),
             ),
         ),
         (
@@ -58,10 +59,13 @@ from projekt.src.parser.variable import Variable
                 Block(
                     [
                         AssignStatement(
-                            Identifier("var2", (1, 20)), Integer(10, (1, 27))
+                            Identifier("var2", (1, 20)),
+                            Integer(10, (1, 27)),
+                            position=(1, 20),
                         )
                     ],
                 ),
+                position=(1, 1),
             ),
         ),
         (
@@ -76,7 +80,9 @@ from projekt.src.parser.variable import Variable
         ),
         (
             "a = 5",
-            AssignStatement(Identifier("a", (1, 1)), Integer(5, (1, 5))),
+            AssignStatement(
+                Identifier("a", (1, 1)), Integer(5, (1, 5)), position=(1, 1)
+            ),
         ),
         (
             "fun(var1, 2)",

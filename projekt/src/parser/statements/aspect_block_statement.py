@@ -1,6 +1,7 @@
 from projekt.src.parser.statement import Statement
 
 
+# TODO: position
 class AspectBlock(Statement):
     def __init__(self, variables, before_statement=None, after_statement=None):
         self.variables = variables

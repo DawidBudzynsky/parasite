@@ -28,6 +28,7 @@ from projekt.src.parser.variable import Variable
                     ),
                 ],
                 else_instructions=[],
+                position=(1, 1),
             ),
         ),
     ],

@@ -1,6 +1,7 @@
 from projekt.src.parser.expression import Expression
 
 
+# TODO: position
 class OperatorExpression(Expression):
     def __init__(self, left_expression=None, right_expression=None):
         self.left_expression = left_expression

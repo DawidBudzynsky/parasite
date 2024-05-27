@@ -1,6 +1,7 @@
 from projekt.src.parser.statement import Statement
 
 
+# TODO: position
 class ForEachStatement(Statement):
     def __init__(self, identifier, expression, block=[]):
         self.identifier = identifier

@@ -2,9 +2,10 @@ from projekt.src.parser.statement import Statement
 
 
 class IfStatement(Statement):
-    def __init__(self, conditions_instructions, else_instructions):
+    def __init__(self, conditions_instructions, else_instructions, position):
         self.conditions_instructions = conditions_instructions
         self.else_instructions = else_instructions
+        self.position = position
 
     def __eq__(self, other):
         if not isinstance(other, IfStatement):

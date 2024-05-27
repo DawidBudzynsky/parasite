@@ -1,3 +1,4 @@
+from typing_extensions import ParamSpec
 import pytest
 from projekt.src.parser.statements.assign_statement import AssignStatement
 from projekt.src.parser.statements.block import Block
@@ -38,7 +39,9 @@ from projekt.src.parser.variable import Variable
                 Block(
                     [
                         AssignStatement(
-                            Identifier("var2", (1, 20)), Integer(10, (1, 27))
+                            Identifier("var2", (1, 20)),
+                            Integer(10, (1, 27)),
+                            position=(1, 20),
                         )
                     ],
                 ),
@@ -59,7 +62,9 @@ from projekt.src.parser.variable import Variable
                             position=(1, 20),
                         ),
                         AssignStatement(
-                            Identifier("var2", (2, 1)), Integer(10, (2, 8))
+                            Identifier("var2", (2, 1)),
+                            Integer(10, (2, 8)),
+                            position=(2, 1),
                         ),
                     ],
                 ),

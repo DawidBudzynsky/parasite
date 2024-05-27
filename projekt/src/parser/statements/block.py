@@ -2,6 +2,7 @@ from typing_extensions import List
 from projekt.src.parser.statement import Statement
 
 
+# TODO: position
 class Block(Statement):
     def __init__(self, statements: List = []):
         self.statements = statements

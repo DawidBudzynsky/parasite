@@ -1,6 +1,7 @@
 from projekt.src.parser.values.operator_expression import OperatorExpression
 
 
+# TODO: position
 class GreaterEqualExpression(OperatorExpression):
     def __init__(self, left_expression=None, right_expression=None):
         super().__init__(left_expression, right_expression)
