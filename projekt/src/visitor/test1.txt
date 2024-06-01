@@ -1,0 +1,14 @@
+aspect aspect_one(fun1){
+    int i = 0
+    before{
+            print(i)
+    }
+    after{
+            i = i + 1
+            print(i)
+    }
+}
+
+fun1() {
+    print("im called fun1")
+}

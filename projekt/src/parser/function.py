@@ -10,7 +10,7 @@ class FunctionDef(Node):
         self.block = block
 
     def accept(self, visitator):
-        return visitator.visit_function(self)
+        return visitator.visit_function_declaration(self)
 
     def __eq__(self, other):
         return (

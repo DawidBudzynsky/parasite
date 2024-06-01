@@ -15,4 +15,4 @@ class MinusNegateExpression(Node):
         return f"(MinusNegate: -{self.casting})"
 
     def accept(self, visitator):
-        return visitator.visit_minus_negate(self)
+        return visitator.visit_minus_negate_expression(self)
