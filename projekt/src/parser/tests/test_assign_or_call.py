@@ -1,16 +1,16 @@
 import pytest
-from projekt.src.parser.exceptions import (
+from parser.exceptions import (
     ASSIGN_OR_CALL_MISSING,
     FUN_CALL_NOT_CLOSED,
     InvalidSyntax,
     InvalidSyntaxVerbose,
     MissingExpression,
 )
-from projekt.src.parser.statements.assign_statement import AssignStatement
-from projekt.src.parser.statements.fun_call_statement import FunCallStatement
-from projekt.src.parser.tests.test_utils import create_parser
-from projekt.src.parser.values.identifier_expression import Identifier
-from projekt.src.parser.values.integer import Integer
+from parser.statements.assign_statement import AssignStatement
+from parser.statements.fun_call_statement import FunCallStatement
+from parser.tests.test_utils import create_parser
+from parser.values.identifier_expression import Identifier
+from parser.values.integer import Integer
 
 
 @pytest.mark.parametrize(

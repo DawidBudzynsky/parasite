@@ -1,4 +1,4 @@
-from projekt.src.parser.node import Node
+from parser.node import Node
 
 
 class FunctionDef(Node):

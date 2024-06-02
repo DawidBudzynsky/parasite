@@ -1,23 +1,23 @@
 import pytest
-from projekt.src.parser.exceptions import (
+from parser.exceptions import (
     ASPECT_DEF_PAREN_OPEN_MISSING,
     AspectArgument,
     AspectBodyError,
     InvalidSyntax,
 )
-from projekt.src.parser.statements.after_statement import AfterStatement
-from projekt.src.parser.statements.before_statement import BeforeStatement
-from projekt.src.parser.statements.aspect_block_statement import AspectBlock
-from projekt.src.parser.statements.aspect_statement import Aspect
-from projekt.src.parser.statements.block import Block
-from projekt.src.parser.statements.fun_call_statement import FunCallStatement
-from projekt.src.parser.tests.test_utils import create_parser
-from projekt.src.parser.type_annotations import TypeAnnotation
-from projekt.src.parser.values.identifier_expression import Identifier
-from projekt.src.parser.values.integer import Integer
-from projekt.src.parser.values.object_access_expression import ObjectAccessExpression
-from projekt.src.parser.values.string import String
-from projekt.src.parser.variable import Variable
+from parser.statements.after_statement import AfterStatement
+from parser.statements.before_statement import BeforeStatement
+from parser.statements.aspect_block_statement import AspectBlock
+from parser.statements.aspect_statement import Aspect
+from parser.statements.block import Block
+from parser.statements.fun_call_statement import FunCallStatement
+from parser.tests.test_utils import create_parser
+from parser.type_annotations import TypeAnnotation
+from parser.values.identifier_expression import Identifier
+from parser.values.integer import Integer
+from parser.values.object_access_expression import ObjectAccessExpression
+from parser.values.string import String
+from parser.variable import Variable
 
 
 @pytest.mark.parametrize(

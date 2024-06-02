@@ -1,9 +1,9 @@
 import pytest
-from projekt.src.parser.tests.test_utils import create_parser
-from projekt.src.parser.values.identifier_expression import Identifier
-from projekt.src.parser.values.integer import Integer
-from projekt.src.parser.values.minus_negate_expression import MinusNegateExpression
-from projekt.src.parser.values.negate_expression import NegateExpression
+from parser.tests.test_utils import create_parser
+from parser.values.identifier_expression import Identifier
+from parser.values.integer import Integer
+from parser.values.minus_negate_expression import MinusNegateExpression
+from parser.values.negate_expression import NegateExpression
 
 
 @pytest.mark.parametrize(

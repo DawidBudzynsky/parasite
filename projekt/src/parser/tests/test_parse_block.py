@@ -1,11 +1,11 @@
 import pytest
-from projekt.src.parser.statements.block import Block
-from projekt.src.parser.statements.return_statement import ReturnStatement
-from projekt.src.parser.tests.test_utils import create_parser
-from projekt.src.parser.type_annotations import TypeAnnotation
-from projekt.src.parser.values.identifier_expression import Identifier
-from projekt.src.parser.values.string import String
-from projekt.src.parser.variable import Variable
+from parser.statements.block import Block
+from parser.statements.return_statement import ReturnStatement
+from parser.tests.test_utils import create_parser
+from parser.type_annotations import TypeAnnotation
+from parser.values.identifier_expression import Identifier
+from parser.values.string import String
+from parser.variable import Variable
 
 
 @pytest.mark.parametrize(

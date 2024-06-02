@@ -1,44 +1,44 @@
 from typing import List
-from projekt.src.lexer.lexer import Lexer
-from projekt.src.lexer.tokens import Token, Type
-from projekt.src.parser.statements.after_statement import AfterStatement
-from projekt.src.parser.statements.aspect_block_statement import AspectBlock
-from projekt.src.parser.statements.aspect_statement import Aspect
-from projekt.src.parser.statements.assign_statement import AssignStatement
-from projekt.src.parser.statements.before_statement import BeforeStatement
-from projekt.src.parser.statements.block import Block
-from projekt.src.parser.statements.for_each_statement import ForEachStatement
-from projekt.src.parser.statements.fun_call_statement import FunCallStatement
-from projekt.src.parser.statements.if_statement import IfStatement
-from projekt.src.parser.statements.loop_statement import LoopStatement
-from projekt.src.parser.statements.program import Program
-from projekt.src.parser.statements.return_statement import ReturnStatement
-from projekt.src.parser.type_annotations import TypeAnnotation
-from projekt.src.parser.values.and_expression import AndExpression
-from projekt.src.parser.values.bool import Bool
-from projekt.src.parser.values.casting_expression import CastingExpression
-from projekt.src.parser.values.divide_expression import DivideExpression
-from projekt.src.parser.function import FunctionDef
-from projekt.src.parser.values.equals_expression import EqualsExpression
-from projekt.src.parser.values.float import Float
-from projekt.src.parser.values.greater_equal_expression import GreaterEqualExpression
-from projekt.src.parser.values.greater_expression import GreaterExpression
-from projekt.src.parser.values.identifier_expression import Identifier
-from projekt.src.parser.values.integer import Integer
-from projekt.src.parser.values.is_expression import IsExpression
-from projekt.src.parser.values.less_equal_expression import LessEqualExpresion
-from projekt.src.parser.values.less_expression import LessExpresion
-from projekt.src.parser.values.minus_negate_expression import MinusNegateExpression
-from projekt.src.parser.values.multiply_expression import MultiplyExpression
-from projekt.src.parser.values.negate_expression import NegateExpression
-from projekt.src.parser.values.minus_expression import SubtractExpression
-from projekt.src.parser.values.not_equals_expression import NotEqualsExpression
-from projekt.src.parser.values.object_access_expression import ObjectAccessExpression
-from projekt.src.parser.values.or_expression import OrExpression
-from projekt.src.parser.values.plus_expression import AddExpresion
-from projekt.src.parser.values.string import String
-from projekt.src.parser.variable import Variable
-from projekt.src.parser.exceptions import (
+from lexer.lexer import Lexer
+from lexer.tokens import Token, Type
+from parser.statements.after_statement import AfterStatement
+from parser.statements.aspect_block_statement import AspectBlock
+from parser.statements.aspect_statement import Aspect
+from parser.statements.assign_statement import AssignStatement
+from parser.statements.before_statement import BeforeStatement
+from parser.statements.block import Block
+from parser.statements.for_each_statement import ForEachStatement
+from parser.statements.fun_call_statement import FunCallStatement
+from parser.statements.if_statement import IfStatement
+from parser.statements.loop_statement import LoopStatement
+from parser.statements.program import Program
+from parser.statements.return_statement import ReturnStatement
+from parser.type_annotations import TypeAnnotation
+from parser.values.and_expression import AndExpression
+from parser.values.bool import Bool
+from parser.values.casting_expression import CastingExpression
+from parser.values.divide_expression import DivideExpression
+from parser.function import FunctionDef
+from parser.values.equals_expression import EqualsExpression
+from parser.values.float import Float
+from parser.values.greater_equal_expression import GreaterEqualExpression
+from parser.values.greater_expression import GreaterExpression
+from parser.values.identifier_expression import Identifier
+from parser.values.integer import Integer
+from parser.values.is_expression import IsExpression
+from parser.values.less_equal_expression import LessEqualExpresion
+from parser.values.less_expression import LessExpresion
+from parser.values.minus_negate_expression import MinusNegateExpression
+from parser.values.multiply_expression import MultiplyExpression
+from parser.values.negate_expression import NegateExpression
+from parser.values.minus_expression import SubtractExpression
+from parser.values.not_equals_expression import NotEqualsExpression
+from parser.values.object_access_expression import ObjectAccessExpression
+from parser.values.or_expression import OrExpression
+from parser.values.plus_expression import AddExpresion
+from parser.values.string import String
+from parser.variable import Variable
+from parser.exceptions import (
     ASPECT_BLOCK_MISSING,
     ASPECT_BLOCK_NOT_CLOSED,
     ASPECT_DEF_NOT_CLOSED,
@@ -491,7 +491,7 @@ class Parser:
                 )
             conditions_instructions.append((expression, true_instructions))
 
-        else_instructions = []
+        else_instructions = None
         if self.token.token_type == Type.ELSE:
             self.consume_token()
             if (else_instructions := self.parse_block()) is None:

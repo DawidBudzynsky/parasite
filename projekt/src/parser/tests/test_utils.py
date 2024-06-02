@@ -1,8 +1,8 @@
 from io import StringIO
 
-from projekt.src.lexer.lexer import Lexer
-from projekt.src.lexer.reader import Source
-from projekt.src.parser.parser import Parser
+from lexer.lexer import Lexer
+from lexer.reader import Source
+from parser.parser import Parser
 
 
 def create_parser(string: str):

@@ -1,9 +1,9 @@
 import pytest
-from projekt.src.parser.statements.block import Block
-from projekt.src.parser.statements.for_each_statement import ForEachStatement
-from projekt.src.parser.tests.test_utils import create_parser
-from projekt.src.parser.values.identifier_expression import Identifier
-from projekt.src.parser.values.object_access_expression import ObjectAccessExpression
+from parser.statements.block import Block
+from parser.statements.for_each_statement import ForEachStatement
+from parser.tests.test_utils import create_parser
+from parser.values.identifier_expression import Identifier
+from parser.values.object_access_expression import ObjectAccessExpression
 
 
 @pytest.mark.parametrize(

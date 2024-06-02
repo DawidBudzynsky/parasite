@@ -1,4 +1,4 @@
-from projekt.src.parser.expression import Expression
+from parser.expression import Expression
 
 
 # TODO: position

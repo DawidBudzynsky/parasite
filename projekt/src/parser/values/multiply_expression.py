@@ -1,4 +1,4 @@
-from projekt.src.parser.values.operator_expression import OperatorExpression
+from parser.values.operator_expression import OperatorExpression
 
 
 # TODO: position

@@ -1,5 +1,5 @@
-from projekt.src.parser.node import Node
-from projekt.src.parser.statement import Statement
+from parser.node import Node
+from parser.statement import Statement
 
 
 class Variable(Node, Statement):

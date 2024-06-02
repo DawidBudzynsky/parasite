@@ -1,22 +1,22 @@
 import pytest
-from projekt.src.parser.statements.assign_statement import AssignStatement
-from projekt.src.parser.statements.block import Block
-from projekt.src.parser.statements.for_each_statement import ForEachStatement
-from projekt.src.parser.statements.fun_call_statement import FunCallStatement
-from projekt.src.parser.statements.if_statement import IfStatement
-from projekt.src.parser.statements.loop_statement import LoopStatement
-from projekt.src.parser.statements.return_statement import ReturnStatement
-from projekt.src.parser.tests.test_utils import create_parser
-from projekt.src.parser.type_annotations import TypeAnnotation
-from projekt.src.parser.values.greater_equal_expression import GreaterEqualExpression
-from projekt.src.parser.values.identifier_expression import Identifier
-from projekt.src.parser.values.integer import Integer
-from projekt.src.parser.values.less_expression import LessExpresion
-from projekt.src.parser.values.minus_expression import SubtractExpression
-from projekt.src.parser.values.multiply_expression import MultiplyExpression
-from projekt.src.parser.values.object_access_expression import ObjectAccessExpression
-from projekt.src.parser.values.plus_expression import AddExpresion
-from projekt.src.parser.variable import Variable
+from parser.statements.assign_statement import AssignStatement
+from parser.statements.block import Block
+from parser.statements.for_each_statement import ForEachStatement
+from parser.statements.fun_call_statement import FunCallStatement
+from parser.statements.if_statement import IfStatement
+from parser.statements.loop_statement import LoopStatement
+from parser.statements.return_statement import ReturnStatement
+from parser.tests.test_utils import create_parser
+from parser.type_annotations import TypeAnnotation
+from parser.values.greater_equal_expression import GreaterEqualExpression
+from parser.values.identifier_expression import Identifier
+from parser.values.integer import Integer
+from parser.values.less_expression import LessExpresion
+from parser.values.minus_expression import SubtractExpression
+from parser.values.multiply_expression import MultiplyExpression
+from parser.values.object_access_expression import ObjectAccessExpression
+from parser.values.plus_expression import AddExpresion
+from parser.variable import Variable
 
 
 @pytest.mark.parametrize(
@@ -46,7 +46,7 @@ from projekt.src.parser.variable import Variable
                         ),
                     )
                 ],
-                else_instructions=[],
+                else_instructions=None,
                 position=(1, 1),
             ),
         ),

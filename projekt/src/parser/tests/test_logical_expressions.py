@@ -1,10 +1,10 @@
 import pytest
-from projekt.src.parser.tests.test_utils import create_parser
-from projekt.src.parser.values.and_expression import AndExpression
-from projekt.src.parser.values.identifier_expression import Identifier
-from projekt.src.parser.values.integer import Integer
-from projekt.src.parser.values.or_expression import OrExpression
-from projekt.src.parser.values.plus_expression import AddExpresion
+from parser.tests.test_utils import create_parser
+from parser.values.and_expression import AndExpression
+from parser.values.identifier_expression import Identifier
+from parser.values.integer import Integer
+from parser.values.or_expression import OrExpression
+from parser.values.plus_expression import AddExpresion
 
 
 @pytest.mark.parametrize(
