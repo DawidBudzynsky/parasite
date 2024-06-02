@@ -1,9 +1,9 @@
 from io import StringIO
 import pytest
-from projekt.src.lexer.errors import LexerError
-from projekt.src.lexer.reader import Source
-from projekt.src.lexer.lexer import Lexer
-from projekt.src.lexer.tokens import Type, Token
+from lexer.errors import LexerError
+from lexer.reader import Source
+from lexer.lexer import Lexer
+from lexer.tokens import Type, Token
 
 
 @pytest.fixture

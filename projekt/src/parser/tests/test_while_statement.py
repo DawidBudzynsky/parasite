@@ -1,15 +1,15 @@
 from typing_extensions import ParamSpec
 import pytest
-from projekt.src.parser.statements.assign_statement import AssignStatement
-from projekt.src.parser.statements.block import Block
-from projekt.src.parser.statements.loop_statement import LoopStatement
-from projekt.src.parser.tests.test_utils import create_parser
-from projekt.src.parser.type_annotations import TypeAnnotation
-from projekt.src.parser.values.greater_equal_expression import GreaterEqualExpression
-from projekt.src.parser.values.identifier_expression import Identifier
-from projekt.src.parser.values.integer import Integer
-from projekt.src.parser.values.less_expression import LessExpresion
-from projekt.src.parser.variable import Variable
+from parser.statements.assign_statement import AssignStatement
+from parser.statements.block import Block
+from parser.statements.loop_statement import LoopStatement
+from parser.tests.test_utils import create_parser
+from parser.type_annotations import TypeAnnotation
+from parser.values.greater_equal_expression import GreaterEqualExpression
+from parser.values.identifier_expression import Identifier
+from parser.values.integer import Integer
+from parser.values.less_expression import LessExpresion
+from parser.variable import Variable
 
 
 @pytest.mark.parametrize(

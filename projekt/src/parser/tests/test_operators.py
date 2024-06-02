@@ -1,12 +1,12 @@
 import pytest
-from projekt.src.parser.exceptions import MissingExpression
-from projekt.src.parser.tests.test_utils import create_parser
-from projekt.src.parser.values.greater_equal_expression import GreaterEqualExpression
-from projekt.src.parser.values.greater_expression import GreaterExpression
-from projekt.src.parser.values.identifier_expression import Identifier
-from projekt.src.parser.values.integer import Integer
-from projekt.src.parser.values.less_equal_expression import LessEqualExpresion
-from projekt.src.parser.values.less_expression import LessExpresion
+from parser.exceptions import MissingExpression
+from parser.tests.test_utils import create_parser
+from parser.values.greater_equal_expression import GreaterEqualExpression
+from parser.values.greater_expression import GreaterExpression
+from parser.values.identifier_expression import Identifier
+from parser.values.integer import Integer
+from parser.values.less_equal_expression import LessEqualExpresion
+from parser.values.less_expression import LessExpresion
 
 
 @pytest.mark.parametrize(

@@ -1,49 +1,57 @@
-from types import new_class
 from typing import Dict
-from typing_extensions import ValuesView
+from parser.function import FunctionDef
+from parser.statements.after_statement import AfterStatement
+from parser.statements.aspect_block_statement import AspectBlock
+from parser.statements.aspect_statement import Aspect
+from parser.statements.assign_statement import AssignStatement
+from parser.statements.before_statement import BeforeStatement
+from parser.statements.block import Block
+from parser.statements.for_each_statement import ForEachStatement
+from parser.statements.fun_call_statement import FunCallStatement
+from parser.statements.if_statement import IfStatement
+from parser.statements.loop_statement import LoopStatement
+from parser.statements.return_statement import ReturnStatement
+from parser.type_annotations import TypeAnnotation
+from parser.values.and_expression import AndExpression
+from parser.values.bool import Bool
+from parser.values.divide_expression import DivideExpression
+from parser.values.equals_expression import EqualsExpression
+from parser.values.float import Float
+from parser.values.greater_equal_expression import GreaterEqualExpression
+from parser.values.greater_expression import GreaterExpression
+from parser.values.identifier_expression import Identifier
+from parser.values.integer import Integer
+from parser.values.less_equal_expression import LessEqualExpresion
+from parser.values.less_expression import LessExpresion
+from parser.values.minus_expression import SubtractExpression
+from parser.values.minus_negate_expression import MinusNegateExpression
+from parser.values.multiply_expression import MultiplyExpression
+from parser.values.negate_expression import NegateExpression
+from parser.values.not_equals_expression import NotEqualsExpression
+from parser.values.object_access_expression import ObjectAccessExpression
+from parser.values.or_expression import OrExpression
+from parser.values.plus_expression import AddExpresion
+from parser.values.string import String
+from parser.variable import Variable
+from visitor.scope import Scope, ScopeObject, ScopeVariable
+from visitor.stack import Stack
 
-from _pytest.python import FunctionDefinition
-from pytest import Function
-from projekt.src.parser.function import FunctionDef
-from projekt.src.parser.statements.after_statement import AfterStatement
-from projekt.src.parser.statements.aspect_block_statement import AspectBlock
-from projekt.src.parser.statements.aspect_statement import Aspect
-from projekt.src.parser.statements.assign_statement import AssignStatement
-from projekt.src.parser.statements.before_statement import BeforeStatement
-from projekt.src.parser.statements.block import Block
-from projekt.src.parser.statements.for_each_statement import ForEachStatement
-from projekt.src.parser.statements.fun_call_statement import FunCallStatement
-from projekt.src.parser.statements.loop_statement import LoopStatement
-from projekt.src.parser.statements.return_statement import ReturnStatement
-from projekt.src.parser.type_annotations import TypeAnnotation
-from projekt.src.parser.values.and_expression import AndExpression
-from projekt.src.parser.values.bool import Bool
-from projekt.src.parser.values.divide_expression import DivideExpression
-from projekt.src.parser.values.equals_expression import EqualsExpression
-from projekt.src.parser.values.float import Float
-from projekt.src.parser.values.greater_equal_expression import GreaterEqualExpression
-from projekt.src.parser.values.greater_expression import GreaterExpression
-from projekt.src.parser.values.identifier_expression import Identifier
-from projekt.src.parser.values.integer import Integer
-from projekt.src.parser.values.less_equal_expression import LessEqualExpresion
-from projekt.src.parser.values.less_expression import LessExpresion
-from projekt.src.parser.values.minus_expression import SubtractExpression
-from projekt.src.parser.values.minus_negate_expression import MinusNegateExpression
-from projekt.src.parser.values.multiply_expression import MultiplyExpression
-from projekt.src.parser.values.negate_expression import NegateExpression
-from projekt.src.parser.values.not_equals_expression import NotEqualsExpression
-from projekt.src.parser.values.object_access_expression import ObjectAccessExpression
-from projekt.src.parser.values.or_expression import OrExpression
-from projekt.src.parser.values.plus_expression import AddExpresion
-from projekt.src.parser.values.string import String
-from projekt.src.parser.variable import Variable
-from projekt.src.visitor.scope import Scope, ScopeVariable
-from projekt.src.visitor.stack import Stack
+
+class EmbeddedFunction:
+    def __init__(self, name, func):
+        self.name = name
+        self.func = func
+
+    def accept(self, visitator):
+        return visitator.visit_embedded_function(self)
+
+
+embedded_functinos = {"print": EmbeddedFunction(name="print", func=print)}
 
 
 class ParserVisitor:
     def __init__(self):
-        self.functions: Dict[str, FunctionDef] = {}
+        self.functions = embedded_functinos
         self.aspects: Dict[str, Aspect] = {}
 
         self.scope_stack = Stack()
@@ -55,15 +63,16 @@ class ParserVisitor:
         self.fun_aspect_map = {}
 
         self.returning_flag = False
-        self.curr_aspect_fun = None
+        self.curr_aspect_fun = {}
 
-        self.last_result = None
+        self.last_result = []
 
     def set_function_to_aspect_map(self, fun_aspect_map):
         self.fun_aspect_map = fun_aspect_map
 
     def set_functions(self, functions):
-        self.functions = functions
+        for fun_name, fundef in functions.items():
+            self.functions[fun_name] = fundef
 
     def set_aspects(self, aspects):
         self.aspects = aspects
@@ -81,7 +90,10 @@ class ParserVisitor:
         return bool.value
 
     def visit_identifier(self, identifier: Identifier):
-        return self.curr_scope.in_scope(identifier.name).value
+        scope_variable = self.curr_scope.in_scope(identifier.name)
+        if isinstance(scope_variable, ScopeObject):
+            return scope_variable
+        return scope_variable.value
 
     def visit_variable(self, variable: Variable):
         value = None
@@ -211,59 +223,97 @@ class ParserVisitor:
         self.returning_flag = True
         return value
 
-    def visit_function_declaration(self, fundef: FunctionDef):
-        new_scope = Scope(parent=self.curr_scope, return_type=fundef.type)
-        self.scope_stack.push(self.curr_scope)
-        self.curr_scope = new_scope
-        # check if given parameter has right type defined in fundef
-        # if len(self.last_result) == 0:
-        #     raise ValueError
-        for value, param in zip(self.last_result, fundef.parameters):
-            new_scope.check_value_type(type=param.type, value=value)
-            self.curr_scope.put_variable(
-                param.name, ScopeVariable(value=value, type=param.type)
-            )
-        result = fundef.block.accept(self)
-        self.curr_scope = self.scope_stack.pop()
-        return result
+    def visit_embedded_function(self, e_func: EmbeddedFunction):
+        for arg in self.last_result:
+            e_func.func(arg)
 
-    def visit_fun_call_statement(self, fun: FunCallStatement):
-        if (fundef := self.functions.get(fun.name)) is None:
-            raise ValueError("couldnt find function declaration")
-        if len(fundef.parameters) != len(fun.arguments):
+    def visit_function_declaration(self, fundef: FunctionDef):
+        if len(fundef.parameters) != len(self.last_result):
             raise ValueError("invalid number of parameters")
 
-        values = []
-        for argument in fun.arguments:
-            values.append(argument.accept(self))
-        self.last_result = values
+        # prepare args for aspect
+        arguments = []
+        for value, param in zip(self.last_result, fundef.parameters):
+            self.curr_scope.check_value_type(type=param.type, value=value)
+            arguments.append(
+                ScopeObject(name=param.name, value=value, type=param.type, args=None)
+            )
+        self.curr_aspect_fun = ScopeObject(
+            name=fundef.identifier, type=fundef.type, args=arguments, value=None
+        )
 
-        self.curr_aspect_fun = fun
+        # setting curr_aspect_fun to know which function we are currently aspecting
         self.scope_stack.push(self.curr_scope)
-        if (aspects_list := self.fun_aspect_map.get(fun.name)) is not None:
+        if (aspects_list := self.fun_aspect_map.get(fundef.identifier)) is not None:
             for aspect_name in aspects_list:
                 aspect = self.aspects.get(aspect_name)
                 aspect.accept(self)
                 if aspect.aspect_block.before_statement is not None:
                     aspect.aspect_block.before_statement.accept(self)
-
         self.curr_scope = self.scope_stack.pop()
-        result = fundef.accept(self)
+
+        new_scope = Scope(parent=self.curr_scope, return_type=fundef.type, variables={})
+        self.scope_stack.push(self.curr_scope)
+        self.curr_scope = new_scope
+        for value, param in zip(self.last_result, fundef.parameters):
+            self.curr_scope.check_value_type(type=param.type, value=value)
+            self.curr_scope.put_variable(
+                param.name, ScopeVariable(value=value, type=param.type)
+            )
+
+        result = fundef.block.accept(self)
+        self.curr_scope = self.scope_stack.pop()
+        if self.returning_flag:
+            self.returning_flag = False
 
         self.scope_stack.push(self.curr_scope)
-        if (aspects_list := self.fun_aspect_map.get(fun.name)) is not None:
+        if (aspects_list := self.fun_aspect_map.get(fundef.identifier)) is not None:
             for aspect in aspects_list:
                 aspect = self.aspects.get(aspect_name)
                 if aspect.aspect_block.after_statement is not None:
                     aspect.aspect_block.after_statement.accept(self)
 
+        self.curr_scope = self.scope_stack.pop()
+        return result
+
+    def visit_fun_call_statement(self, fun: FunCallStatement):
+        if (fundef := self.functions.get(fun.name)) is None:
+            raise ValueError(f"couldnt find function declaration {fun.name}")
+
+        values = []
+        for argument in fun.arguments:
+            values.append(argument.accept(self))
+        self.last_result = values  # NOTE: i guess i can do that differently
+
+        result = fundef.accept(self)
+
         return result
 
     def visit_block(self, block: Block):
         for statement in block.statements:
-            if isinstance(statement, ReturnStatement):
-                return statement.accept(self)
-            statement.accept(self)  # TODO: return here???
+            result = statement.accept(self)
+            if self.returning_flag:
+                return result
+
+    def visit_if_statement(self, if_s: IfStatement):
+        new_scope = Scope(parent=self.curr_scope, return_type=None, variables={})
+        self.scope_stack.push(self.curr_scope)
+        self.curr_scope = new_scope
+
+        for condition_instruction in if_s.conditions_instructions:
+            condition, instruction = condition_instruction
+            if condition.accept(self):
+                result = instruction.accept(self)
+                self.curr_scope = self.scope_stack.pop()
+                return result
+
+        if if_s.else_instructions is not None:
+            result = if_s.else_instructions.accept(self)
+            self.curr_scope = self.scope_stack.pop()
+            return result
+
+        self.curr_scope = self.scope_stack.pop()
+        return None
 
     def visit_loop_statement(self, loop: LoopStatement):
         new_scope = Scope(parent=self.curr_scope, return_type=None, variables={})
@@ -283,25 +333,31 @@ class ParserVisitor:
         self.curr_scope = new_scope
 
         # initialize "arg" in scope
-        self.curr_scope.put_variable(v_name="arg", scope_variable=None)
-        arg_list = for_s.expression.accept()  # visiting object_access
+        self.curr_scope.put_variable(v_name=for_s.identifier.name, scope_variable=None)
+        arg_list = for_s.expression.accept(self)  # visiting object_access
         for arg in arg_list:
             # set currently iterating arg
-            self.curr_scope.variables["arg"] = arg
-
-            if (result := self.visit_block(for_s.block)) is not None:
+            # NOTE: arg must be ScopeObject thats for sure
+            self.curr_scope.variables[for_s.identifier.name] = arg
+            if (result := for_s.block.accept(self)) is not None:
                 self.curr_scope = self.scope_stack.pop()
                 return result
         self.curr_scope = self.scope_stack.pop()
         return None
 
-    # NOTE: trochę zakładamy, że po kropce zawsze jest int
+    # NOTE: trochę zakładamy, że po kropce zawsze jest identifier
     def visit_access_expr(self, obj: ObjectAccessExpression):
+        # __import__("pdb").set_trace()
         base_object = obj.left_expression.accept(self)
+        if not isinstance(base_object, ScopeObject):
+            raise ValueError("wyciągnięto źle, to nie ScopeObject")
+
         if not isinstance(obj.right_expression, Identifier):
             raise ValueError
         attribute_name = obj.right_expression.name
-        attribute = base_object.get(attribute_name)
+        if not hasattr(base_object, attribute_name):
+            raise ValueError(f"objekt nie ma atrybutu: {attribute_name}")
+        attribute = getattr(base_object, attribute_name)
         # NOTE: ensure that it gets the objects itself, not the value
         return attribute
 
@@ -314,40 +370,23 @@ class ParserVisitor:
     def visit_aspect_statement(self, aspect: Aspect):
         if (stack := self.aspects_scope_map.get(aspect.identifier)) is None:
             stack = Stack()
-            stack.push(
-                Scope(
-                    parent=None,
-                    return_type=None,
-                    variables={
-                        "function": ScopeVariable(
-                            type=FunctionDef,
-                            value={
-                                "name": self.curr_aspect_fun.name,
-                                "args": self.curr_aspect_fun.arguments,
-                            },
-                        )
-                    },
-                )
-            )
+            stack.push(Scope(parent=None, return_type=None, variables={}))
             self.aspects_scope_map[aspect.identifier] = stack
 
         self.curr_aspect_stack = self.aspects_scope_map.get(aspect.identifier)
         self.curr_scope = self.curr_aspect_stack.peek()
+        self.curr_scope.variables["function"] = self.curr_aspect_fun
         if len(self.curr_scope.variables) == 1:
             aspect.aspect_block.accept(self)
 
     def visit_before_statement(self, before: BeforeStatement):
         new_aspect_scope = Scope(parent=self.curr_scope, return_type=None, variables={})
         self.curr_scope = new_aspect_scope
-
         before.block.accept(self)
-
         self.curr_scope = self.curr_aspect_stack.peek()
 
     def visit_after_statement(self, after: AfterStatement):
         new_aspect_scope = Scope(parent=self.curr_scope, return_type=None, variables={})
         self.curr_scope = new_aspect_scope
-
         after.block.accept(self)
-
         self.curr_scope = self.curr_aspect_stack.peek()

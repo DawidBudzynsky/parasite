@@ -1,10 +1,9 @@
-from typing_extensions import List
-from projekt.src.parser.statement import Statement
+from parser.statement import Statement
 
 
 # TODO: position
 class Block(Statement):
-    def __init__(self, statements: List = []):
+    def __init__(self, statements=[]):
         self.statements = statements
 
     def __eq__(self, other):

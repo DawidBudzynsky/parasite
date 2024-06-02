@@ -1,35 +1,37 @@
 import pytest
-from projekt.src.parser.function import FunctionDef
-from projekt.src.parser.statements.aspect_block_statement import AspectBlock
-from projekt.src.parser.statements.aspect_statement import Aspect
-from projekt.src.parser.statements.assign_statement import AssignStatement
-from projekt.src.parser.statements.before_statement import BeforeStatement
-from projekt.src.parser.statements.block import Block
-from projekt.src.parser.statements.for_each_statement import ForEachStatement
-from projekt.src.parser.statements.fun_call_statement import FunCallStatement
-from projekt.src.parser.statements.loop_statement import LoopStatement
-from projekt.src.parser.statements.return_statement import ReturnStatement
-from projekt.src.parser.type_annotations import TypeAnnotation
-from projekt.src.parser.values.and_expression import AndExpression
-from projekt.src.parser.values.bool import Bool
-from projekt.src.parser.values.divide_expression import DivideExpression
-from projekt.src.parser.values.equals_expression import EqualsExpression
-from projekt.src.parser.values.identifier_expression import Identifier
-from projekt.src.parser.values.integer import Integer
-from projekt.src.parser.values.float import Float
-from projekt.src.parser.values.less_expression import LessExpresion
-from projekt.src.parser.values.minus_expression import SubtractExpression
-from projekt.src.parser.values.minus_negate_expression import MinusNegateExpression
-from projekt.src.parser.values.multiply_expression import MultiplyExpression
-from projekt.src.parser.values.negate_expression import NegateExpression
-from projekt.src.parser.values.not_equals_expression import NotEqualsExpression
-from projekt.src.parser.values.object_access_expression import ObjectAccessExpression
-from projekt.src.parser.values.or_expression import OrExpression
-from projekt.src.parser.values.plus_expression import AddExpresion
-from projekt.src.parser.values.string import String
-from projekt.src.parser.variable import Variable
-from projekt.src.visitor.scope import Scope, ScopeObject, ScopeVariable
-from projekt.src.visitor.visitor import ParserVisitor
+from parser.function import FunctionDef
+from parser.statements.aspect_block_statement import AspectBlock
+from parser.statements.aspect_statement import Aspect
+from parser.statements.assign_statement import AssignStatement
+from parser.statements.before_statement import BeforeStatement
+from parser.statements.block import Block
+from parser.statements.for_each_statement import ForEachStatement
+from parser.statements.fun_call_statement import FunCallStatement
+from parser.statements.if_statement import IfStatement
+from parser.statements.loop_statement import LoopStatement
+from parser.statements.return_statement import ReturnStatement
+from parser.type_annotations import TypeAnnotation
+from parser.values.and_expression import AndExpression
+from parser.values.bool import Bool
+from parser.values.divide_expression import DivideExpression
+from parser.values.equals_expression import EqualsExpression
+from parser.values.greater_expression import GreaterExpression
+from parser.values.identifier_expression import Identifier
+from parser.values.integer import Integer
+from parser.values.float import Float
+from parser.values.less_expression import LessExpresion
+from parser.values.minus_expression import SubtractExpression
+from parser.values.minus_negate_expression import MinusNegateExpression
+from parser.values.multiply_expression import MultiplyExpression
+from parser.values.negate_expression import NegateExpression
+from parser.values.not_equals_expression import NotEqualsExpression
+from parser.values.object_access_expression import ObjectAccessExpression
+from parser.values.or_expression import OrExpression
+from parser.values.plus_expression import AddExpresion
+from parser.values.string import String
+from parser.variable import Variable
+from visitor.scope import Scope, ScopeObject, ScopeVariable
+from visitor.visitor import ParserVisitor
 
 
 @pytest.mark.parametrize(
@@ -176,6 +178,7 @@ def test_visit_fun_call():
             position=(0, 0),
         )
     }
+    # __import__("pdb").set_trace()
     result = FunCallStatement(
         identifier="add",
         arguments=[Integer(1, position=(0, 0)), Integer(2, position=(0, 0))],
@@ -218,10 +221,7 @@ def test_visit_while():
 def test_object_access():
     v = ParserVisitor()
     v.curr_scope.variables = {
-        "function": ScopeVariable(
-            type=FunctionDef,
-            value={"name": "test_fun"},
-        )
+        "function": ScopeObject(name="test_fun", value=None, type=None, args=None)
     }
     result = ObjectAccessExpression(
         left_expression=Identifier("function", position=(0, 0)),
@@ -233,10 +233,9 @@ def test_object_access():
 def test_object_access_v2():
     v = ParserVisitor()
     v.curr_scope.variables = {
-        "arg": ScopeVariable(
-            type=TypeAnnotation.INT,
-            value={"type": TypeAnnotation.STR},
-        )
+        "arg": ScopeObject(
+            type=TypeAnnotation.STR, name="arg", value="hello", args=None
+        ),
     }
     result = ObjectAccessExpression(
         left_expression=Identifier("arg", position=(0, 0)),
@@ -245,50 +244,97 @@ def test_object_access_v2():
     assert result == TypeAnnotation.STR
 
 
-# def test_for_each_statement():
-#     v = ParserVisitor()
-#     v.curr_scope.variables = {
-#         "function": ScopeVariable(
-#             type=None,
-#             value={"args": [{""}]},
-#         )
+# for arg in function.args {
+#     if arg.value == 2 {
+#         return "arg is 2"
 #     }
-#     result = ForEachStatement(
-#         identifier=Identifier("a", position=(0, 0)),
-#         expression=ObjectAccessExpression(
-#             left_expression=Identifier(name="function", position=(0, 0)),
-#             right_expression=Identifier(name="args", position=(0, 0)),
-#         ),
-#     )
-#     assert result == TypeAnnotation.STR
+# }
+
+
+def test_for_each_statement():
+    v = ParserVisitor()
+    v.curr_scope = Scope(
+        parent=None,
+        return_type=TypeAnnotation.STR,
+        variables={
+            "function": ScopeObject(
+                type=FunctionDef,
+                name="fun_name",
+                value=None,
+                args=[
+                    ScopeObject(name="a", value=1, type=TypeAnnotation.INT, args=None),
+                    ScopeObject(name="b", value=2, type=TypeAnnotation.INT, args=None),
+                ],
+            )
+        },
+    )
+    # __import__("pdb").set_trace()
+    result = ForEachStatement(
+        identifier=Identifier("arg", position=(0, 0)),
+        expression=ObjectAccessExpression(
+            left_expression=Identifier(name="function", position=(0, 0)),
+            right_expression=Identifier(name="args", position=(0, 0)),
+        ),
+        block=Block(
+            statements=[
+                IfStatement(
+                    conditions_instructions=[
+                        (
+                            EqualsExpression(
+                                left_expression=ObjectAccessExpression(
+                                    left_expression=Identifier(
+                                        name="arg", position=(0, 0)
+                                    ),
+                                    right_expression=Identifier(
+                                        name="value", position=(0, 0)
+                                    ),
+                                ),
+                                right_expression=Integer(2, position=(0, 0)),
+                            ),
+                            Block(
+                                statements=[
+                                    ReturnStatement(
+                                        String(value="arg is 2", position=(0, 0))
+                                    )
+                                ]
+                            ),
+                        )
+                    ],
+                    else_instructions=None,
+                    position=(0, 0),
+                )
+            ]
+        ),
+    ).accept(v)
+    assert result == "arg is 2"
+
+
+# fun1(a,b)int{
+#   return a + b
+# }
+#
+# aspect asp1(fun1){
+#   before{
+#       int var = 0
+#   }
+# }
 
 
 def test_fun_call_with_aspect():
     v = ParserVisitor()
     v.aspects = {
-        "aspect1": Aspect(
-            identifier="aspect1",
-            aspect_args=["fun1", "fun2"],
+        "asp1": Aspect(
+            identifier="asp1",
+            aspect_args=["fun1"],
             aspect_block=AspectBlock(
-                variables=[
-                    Variable(
-                        name="i",
-                        value=Integer(value=0, position=(0, 0)),
-                        type=TypeAnnotation.INT,
-                        position=(0, 0),
-                    )
-                ],
+                variables=[],
                 before_statement=BeforeStatement(
                     block=Block(
                         statements=[
-                            AssignStatement(
-                                identifier=Identifier("i", position=(0, 0)),
-                                expression=AddExpresion(
-                                    left_expression=Identifier(
-                                        name="i", position=(0, 0)
-                                    ),
-                                    right_expression=Integer(value=1, position=(0, 0)),
-                                ),
+                            Variable(
+                                name="var",
+                                type=TypeAnnotation.INT,
+                                value=Integer(0, position=(0, 0)),
                                 position=(0, 0),
                             )
                         ]
@@ -301,39 +347,82 @@ def test_fun_call_with_aspect():
     v.functions = {
         "fun1": FunctionDef(
             identifier="fun1",
-            parameters=[],
+            parameters=[
+                Variable(name="a", type=TypeAnnotation.INT),
+                Variable(name="b", type=TypeAnnotation.INT),
+            ],
+            type=TypeAnnotation.INT,
             block=Block(
                 statements=[
-                    Variable(
-                        name="var",
-                        type=TypeAnnotation.INT,
-                        value=Integer(1, position=(0, 0)),
-                    )
+                    ReturnStatement(
+                        expression=AddExpresion(
+                            left_expression=Identifier("a", position=(0, 0)),
+                            right_expression=Identifier("b", position=(0, 0)),
+                        )
+                    ),
                 ]
             ),
-            type=TypeAnnotation.INT,
-            position=(0, 0),
-        ),
-        "fun2": FunctionDef(
-            identifier="fun2",
-            parameters=[],
-            block=Block(
-                statements=[
-                    Variable(
-                        name="var2",
-                        # TODO: it doesnt matter what fun return type is set right now, repair it
-                        type=None,
-                        value=Integer(1, position=(0, 0)),
-                    )
-                ]
-            ),
-            type=TypeAnnotation.INT,
             position=(0, 0),
         ),
     }
-    v.fun_aspect_map = {"fun1": ["aspect1"], "fun2": ["aspect1"]}
-    # __import__("pdb").set_trace()
-    FunCallStatement(identifier="fun1", arguments=[], position=(0, 0)).accept(v)
-    FunCallStatement(identifier="fun2", arguments=[], position=(0, 0)).accept(v)
-    result = v.aspects_scope_map.get("aspect1").peek().variables.get("i").value
-    assert result == 2
+    v.fun_aspect_map = {"fun1": ["asp1"]}
+
+    FunCallStatement(
+        identifier="fun1",
+        arguments=[
+            Integer(value=1, position=(0, 0)),
+            Integer(value=2, position=(0, 0)),
+        ],
+        position=(0, 0),
+    ).accept(v)
+    result = v.aspects_scope_map.get("asp1").peek().variables.get("function").name
+    assert result == "fun1"
+
+
+# fun1(a: int) str {
+#     if a > 2 {
+#         return "a>2"
+#     } else {
+#         return "a<2"
+#     }
+# }
+def test_visit_if_statement():
+    v = ParserVisitor()
+    v.curr_scope = Scope(
+        parent=None,
+        return_type=TypeAnnotation.STR,
+        variables={"a": ScopeVariable(value=3, type=TypeAnnotation.INT)},
+    )
+    result = IfStatement(
+        conditions_instructions=[
+            (
+                GreaterExpression(
+                    left_expression=Identifier("a", position=(0, 0)),
+                    right_expression=Integer(value=2, position=(0, 0)),
+                ),
+                Block(
+                    statements=[ReturnStatement(String(value="a>2", position=(0, 0)))]
+                ),
+            )
+        ],
+        else_instructions=Block(
+            statements=[ReturnStatement(String(value="a<2", position=(0, 0)))]
+        ),
+        position=(0, 0),
+    ).accept(v)
+    assert result == "a>2"
+
+
+def test_print_func():
+    v = ParserVisitor()
+    import io
+    import sys
+
+    captured_output = io.StringIO()
+    original_stdout = sys.stdout
+    sys.stdout = captured_output
+    FunCallStatement(
+        identifier="print", arguments=[String(value="a", position=(0, 0))]
+    ).accept(v)
+    sys.stdout = original_stdout
+    assert captured_output.getvalue().rstrip() == "a"

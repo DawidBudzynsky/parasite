@@ -1,13 +1,13 @@
 import pytest
-from projekt.src.lexer.tokens import Type
-from projekt.src.parser.exceptions import (
+from lexer.tokens import Type
+from parser.exceptions import (
     MISSING_IDENTIFIER_AFTER_COMMA,
     InvalidSyntaxVerbose,
 )
-from projekt.src.parser.tests.test_utils import create_parser
-from projekt.src.parser.type_annotations import TypeAnnotation
-from projekt.src.parser.values.identifier_expression import Identifier
-from projekt.src.parser.variable import Variable
+from parser.tests.test_utils import create_parser
+from parser.type_annotations import TypeAnnotation
+from parser.values.identifier_expression import Identifier
+from parser.variable import Variable
 
 
 def test_parse_parameter_number():

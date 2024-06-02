@@ -1,4 +1,4 @@
-from projekt.src.parser.statement import Statement
+from parser.statement import Statement
 
 
 class IfStatement(Statement):

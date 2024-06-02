@@ -1,6 +1,6 @@
-from projekt.src.lexer.errors import LexerError
-from projekt.src.lexer.reader import Source
-from projekt.src.lexer.tokens import Token, Symbol, Type
+from lexer.errors import LexerError
+from lexer.reader import Source
+from lexer.tokens import Token, Symbol, Type
 import sys
 from io import StringIO
 

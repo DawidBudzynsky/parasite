@@ -1,8 +1,8 @@
 import pytest
-from projekt.src.parser.statements.fun_call_statement import FunCallStatement
-from projekt.src.parser.tests.test_utils import create_parser
-from projekt.src.parser.values.identifier_expression import Identifier
-from projekt.src.parser.values.object_access_expression import ObjectAccessExpression
+from parser.statements.fun_call_statement import FunCallStatement
+from parser.tests.test_utils import create_parser
+from parser.values.identifier_expression import Identifier
+from parser.values.object_access_expression import ObjectAccessExpression
 
 
 @pytest.mark.parametrize(

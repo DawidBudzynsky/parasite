@@ -1,7 +1,7 @@
 from typing import TypeAlias
-from projekt.src.parser.exceptions import InvalidSyntaxVerbose
-from projekt.src.parser.type_annotations import TypeAnnotation
-from projekt.src.parser.variable import Variable
+from parser.exceptions import InvalidSyntaxVerbose
+from parser.type_annotations import TypeAnnotation
+from parser.variable import Variable
 
 
 class ScopeVariable:
@@ -21,21 +21,23 @@ class ScopeVariable:
 
 
 class ScopeObject:
-    def __init__(self, value, type, child):
+    def __init__(self, value, type, name=None, args=None):
+        self.name = name
         self.value = value
         self.type = type
-        self.child = child
+        self.args = args
 
     def __eq__(self, other):
         return (
             isinstance(other, ScopeObject)
             and self.value == other.value
             and self.type == other.type
-            and self.child == other.child
+            and self.name == other.name
+            and self.args == other.args
         )
 
     def __repr__(self):
-        return f"(ScopeObject {self.value}, {self.type}, {self.child})"
+        return f"(ScopeObject {self.name}, {self.value}, {self.type}, {self.args})"
 
 
 class Scope:
@@ -48,7 +50,7 @@ class Scope:
         return isinstance(other, Scope) and self.variables == other.variables
 
     def __repr__(self):
-        return f"{self.variables}"
+        return f"Scope:{self.parent}, {self.return_type},{self.variables}"
 
     def in_scope(self, name):
         if name not in self.variables:
