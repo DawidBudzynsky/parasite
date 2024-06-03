@@ -1,0 +1,35 @@
+fun1(a: int) int {
+    return a
+}
+
+aspect asp1(fun1){
+    before{
+        print("asp1 called")
+    }
+    after{
+        print("asp1 ended, res: " + function.result->str)
+    }
+}
+
+aspect asp2(fun1){
+    before{
+        print("asp2 called")
+    }
+    after{
+        print("asp2 ended, res: " + function.result->str)
+    }
+}
+
+aspect asp3(fun1){
+    before{
+        print("asp3 called")
+    }
+    after{
+        print("asp3 ended, res: " + function.result->str)
+    }
+}
+
+main(){
+    fun1(1)
+}
+

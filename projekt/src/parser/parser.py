@@ -91,6 +91,7 @@ class Parser:
             Type.PAREN_CLOSE: ")",
             Type.WHILE: "while",
             Type.IN: "in",
+            Type.IS: "is",
             Type.COMMA: ",",
         }
         self.addition_map = {
@@ -128,7 +129,10 @@ class Parser:
         ]
 
     def consume_token(self):
-        self.token = self.lexer.build_next_token()
+        while True:
+            self.token = self.lexer.build_next_token()
+            if self.token.token_type != Type.COMMENT:
+                break
 
     def __add_to_dict(self, dictionary, key, value, exception):
         if key in dictionary:
@@ -402,6 +406,10 @@ class Parser:
             case Type.STRING:
                 self.consume_token()
                 return String(value, position)
+            case (
+                Type.INTEGER_TYPE | Type.FLOAT_TYPE | Type.BOOL_TYPE | Type.STRING_TYPE
+            ):
+                return self.parse_type_annotation()
             case Type.PAREN_OPEN:
                 self.consume_token()
                 if (expression := self.parse_expression()) is None:

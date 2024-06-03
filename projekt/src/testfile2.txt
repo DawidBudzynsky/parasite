@@ -1,0 +1,40 @@
+add(a: int, b: int) int {
+    return a + b
+}
+
+minus(a: int, b: int) int {
+    return a - b
+}
+
+sum(a: int, b: int) int {
+    return a + b
+}
+
+aspect logAddMinus(add, minus){
+    before{
+        print("====function " + function.name + " called====")
+        print("called with args:")
+        for arg in function.args{
+            print("name: " + arg.name + ", value: " + arg.value->str)
+        }
+    }
+    after{
+        print("function result: " + function.result->str)
+        print("====function " + function.name + " ended====")
+        print("")
+    }
+}
+
+aspect logSum(add){
+    after{
+        print("xp res: " + function.result->str)
+    }
+}
+
+main(){
+    int var1 = 5
+    int var2 = 2
+    add(var1, var2)
+    minus(var1, var2)
+}
+

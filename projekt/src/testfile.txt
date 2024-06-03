@@ -1,13 +1,28 @@
-sum(a: int, b: int) int {
-    return a+b
+doSomething(){
+        print("hello world")
+}
+
+aspect logFunctionCall(doSomething){
+        int counter = 0
+        before{
+		        for arg in function.args {
+			        print(arg.value)
+			        print(arg.name)
+			        print(arg.type)
+			        if arg.type is int {
+				        print("argument " + arg.value + "jest typu int")
+			        }
+		        }
+            print("starting function: "  + function.name)
+        }
+        after{
+            counter = counter + 1
+            print("function called: " + counter->str + " times")
+        }
 }
 
 main(){
-        int var1 = 1
-        int var2 = 2
-        int result = sum(var1,var2)
-        if result < 4 {
-                print("result smaller than 3")
-        }
-        print(result)
+    doSomething()
+    doSomething()
+    doSomething()
 }

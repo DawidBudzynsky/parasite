@@ -12,9 +12,9 @@ class Interpreter:
         fun_aspect_dict = {}
         for aspect_name, aspect in aspects.items():
             for fun in aspect.aspect_args:
-                if fun_aspect_dict.get(fun) is None:
-                    fun_aspect_dict[fun] = []
-                fun_aspect_dict[fun].append(aspect_name)
+                if fun_aspect_dict.get(fun.name) is None:
+                    fun_aspect_dict[fun.name] = []
+                fun_aspect_dict[fun.name].append(aspect_name)
 
         self.visitor.set_functions(functions)
         self.visitor.set_aspects(aspects)
@@ -23,4 +23,4 @@ class Interpreter:
         for fname, function in functions.items():
             if fname == "main":
                 # __import__("pdb").set_trace()
-                return function.accept(self.visitor)
+                function.accept(self.visitor)
