@@ -68,7 +68,9 @@ class Scope:
     def put_variable(self, v_name, scope_variable):
         if self.in_current_scope(v_name):
             raise ValueError("variable redefinition")
-        self.variables[f"{v_name}"] = scope_variable
+        if scope_variable is not None:
+            self.check_value_type(scope_variable.type, scope_variable.value)
+        self.variables[v_name] = scope_variable
 
     def set_value(self, v_name, value):
         if (variable := self.in_scope(v_name)) is None:
@@ -105,17 +107,25 @@ class Scope:
         match return_type:
             case TypeAnnotation.INT:
                 if not isinstance(value, int):
-                    raise ValueError("Wrong return value, should be int")
+                    raise ValueError(
+                        f"Wrong return value: {type(value).__name__}, should be int"
+                    )
                 return
             case TypeAnnotation.FLOAT:
                 if not isinstance(value, float):
-                    raise ValueError("Wrong return value, should be float")
+                    raise ValueError(
+                        f"Wrong return value: {type(value).__name__}, should be float"
+                    )
                 return
             case TypeAnnotation.STR:
                 if not isinstance(value, str):
-                    raise ValueError("Wrong return value, should be string")
+                    raise ValueError(
+                        f"Wrong return value: {type(value).__name__}, should be string"
+                    )
                 return
             case TypeAnnotation.BOOL:
                 if not isinstance(value, bool):
-                    raise ValueError("Wrong return value, should be boolean")
+                    raise ValueError(
+                        f"Wrong return value: {type(value).__name__}, should be boolean"
+                    )
                 return

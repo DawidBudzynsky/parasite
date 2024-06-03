@@ -1,3 +1,4 @@
+import builtins
 from typing import Dict
 from parser.function import FunctionDef
 from parser.statements.after_statement import AfterStatement
@@ -33,6 +34,8 @@ from parser.values.or_expression import OrExpression
 from parser.values.plus_expression import AddExpresion
 from parser.values.string import String
 from parser.variable import Variable
+from parser.values.casting_expression import CastingExpression
+from parser.values.is_expression import IsExpression
 from visitor.scope import Scope, ScopeObject, ScopeVariable
 from visitor.stack import Stack
 
@@ -90,18 +93,18 @@ class ParserVisitor:
         return bool.value
 
     def visit_identifier(self, identifier: Identifier):
-        scope_variable = self.curr_scope.in_scope(identifier.name)
+        if (scope_variable := self.curr_scope.in_scope(identifier.name)) is None:
+            raise ValueError("coulnt find variable in scope")
         if isinstance(scope_variable, ScopeObject):
             return scope_variable
         return scope_variable.value
 
     def visit_variable(self, variable: Variable):
-        value = None
+        value = None  # NOTE: god knows
         if variable.value is not None:
             value = variable.value.accept(self)
         self.curr_scope.put_variable(
-            variable.name,
-            ScopeVariable(type=variable.type, value=value),
+            variable.name, ScopeVariable(type=variable.type, value=value)
         )
 
     def visit_minus_negate_expression(self, minus_operator: MinusNegateExpression):
@@ -111,15 +114,15 @@ class ParserVisitor:
         return -1 * ex
 
     def visit_add_expr(self, sum: AddExpresion):
-        rex = sum.left_expression.accept(self)
-        lex = sum.right_expression.accept(self)
+        lex = sum.left_expression.accept(self)
+        rex = sum.right_expression.accept(self)
         if isinstance(rex, (int, float)) and isinstance(lex, (int, float)):
-            return rex + lex
+            return lex + rex
         # string concatenation
         if isinstance(rex, str) and isinstance(lex, str):
-            return str(rex + lex)
+            return str(lex + rex)
         else:
-            raise ValueError
+            raise ValueError(f"couldnt use add on {lex} + {rex}")
 
     def visit_sub_expr(self, sub: SubtractExpression):
         rex = sub.left_expression.accept(self)
@@ -127,7 +130,7 @@ class ParserVisitor:
         if isinstance(rex, (int, float)) and isinstance(lex, (int, float)):
             return rex - lex
         else:
-            raise ValueError
+            raise ValueError(f"couldnt use sub on {lex} - {rex}")
 
     def visit_multiply_expr(self, mul: MultiplyExpression):
         rex = mul.left_expression.accept(self)
@@ -135,7 +138,7 @@ class ParserVisitor:
         if isinstance(rex, (int, float)) and isinstance(lex, (int, float)):
             return rex * lex
         else:
-            raise ValueError
+            raise ValueError(f"couldnt use multiply on {lex} * {rex}")
 
     def visit_divide_expression(self, div: DivideExpression):
         rex = div.left_expression.accept(self)
@@ -143,26 +146,26 @@ class ParserVisitor:
         if isinstance(rex, (int, float)) and isinstance(lex, (int, float)):
             return rex / lex
         else:
-            raise ValueError
+            raise ValueError(f"couldnt use divide on {lex} / {rex}")
 
     def visit_negate_expression(self, not_operator: NegateExpression):
         obj = not_operator.casting.accept(self)
         if not isinstance(obj, bool):
-            raise ValueError
+            raise ValueError(f"{obj} is not of type bool")
         return not bool(obj)
 
     def visit_and_expression(self, and_expr: AndExpression):
         lex = and_expr.left_expression.accept(self)
         rex = and_expr.right_expression.accept(self)
         if not isinstance(lex, bool) and not isinstance(rex, bool):
-            raise ValueError
+            raise ValueError(f"couldnt use and expression on {lex} and {rex}")
         return bool(lex) and bool(rex)
 
     def visit_or_expression(self, or_expr: OrExpression):
         lex = or_expr.left_expression.accept(self)
         rex = or_expr.right_expression.accept(self)
         if not isinstance(lex, bool) and not isinstance(rex, bool):
-            raise ValueError
+            raise ValueError(f"couldnt use or expression on {lex} or {rex}")
         return bool(lex) or bool(rex)
 
     def visit_equals_expr(self, equals: EqualsExpression):
@@ -180,7 +183,7 @@ class ParserVisitor:
         rex = greater_equal.right_expression.accept(self)
 
         if not isinstance(lex, (int, float)) and not isinstance(rex, (int, float)):
-            raise ValueError
+            raise ValueError(f"couldnt compare {lex} >= {rex}")
         return lex >= rex
 
     def visit_greater_expr(self, greater: GreaterExpression):
@@ -188,7 +191,7 @@ class ParserVisitor:
         rex = greater.right_expression.accept(self)
 
         if not isinstance(lex, (int, float)) and not isinstance(rex, (int, float)):
-            raise ValueError
+            raise ValueError(f"couldnt compare {lex} > {rex}")
         return lex > rex
 
     def visit_less_equal_expr(self, less_equal: LessEqualExpresion):
@@ -196,7 +199,7 @@ class ParserVisitor:
         rex = less_equal.right_expression.accept(self)
 
         if not isinstance(lex, (int, float)) and not isinstance(rex, (int, float)):
-            raise ValueError
+            raise ValueError(f"couldnt compare {lex} <= {rex}")
         return lex <= rex
 
     def visit_less_expr(self, less: LessExpresion):
@@ -204,18 +207,17 @@ class ParserVisitor:
         rex = less.right_expression.accept(self)
 
         if not isinstance(lex, (int, float)) and not isinstance(rex, (int, float)):
-            raise ValueError
+            raise ValueError(f"couldnt compare {lex} < {rex}")
         return lex < rex
 
     def visit_assign_statement(self, assign: AssignStatement):
         name = assign.identifier.name
         value = assign.expression.accept(self)
-        # TODO: inaczje, to wprowadza w błąd jakbyśmy ustawiali wartość w tym SCOPE a nie zawsze tak jest
         self.curr_scope.set_value(name, value)
 
     def visit_return_statement(self, rs: ReturnStatement):
-        expression = rs.expression
-        if expression is None:
+        # expression can be None
+        if (expression := rs.expression) is None:
             return None
         value = expression.accept(self)
         # NOTE: może tutaj powininem sprawdzać errory
@@ -231,49 +233,24 @@ class ParserVisitor:
         if len(fundef.parameters) != len(self.last_result):
             raise ValueError("invalid number of parameters")
 
-        # prepare args for aspect
-        arguments = []
-        for value, param in zip(self.last_result, fundef.parameters):
-            self.curr_scope.check_value_type(type=param.type, value=value)
-            arguments.append(
-                ScopeObject(name=param.name, value=value, type=param.type, args=None)
-            )
-        self.curr_aspect_fun = ScopeObject(
-            name=fundef.identifier, type=fundef.type, args=arguments, value=None
-        )
-
-        # setting curr_aspect_fun to know which function we are currently aspecting
-        self.scope_stack.push(self.curr_scope)
         if (aspects_list := self.fun_aspect_map.get(fundef.identifier)) is not None:
-            for aspect_name in aspects_list:
-                aspect = self.aspects.get(aspect_name)
-                aspect.accept(self)
-                if aspect.aspect_block.before_statement is not None:
-                    aspect.aspect_block.before_statement.accept(self)
-        self.curr_scope = self.scope_stack.pop()
+            return self.run_function_with_aspect(aspects_list, fundef)
 
+        values = self.last_result.copy()
         new_scope = Scope(parent=self.curr_scope, return_type=fundef.type, variables={})
         self.scope_stack.push(self.curr_scope)
         self.curr_scope = new_scope
-        for value, param in zip(self.last_result, fundef.parameters):
+        for value, param in zip(values, fundef.parameters):
             self.curr_scope.check_value_type(type=param.type, value=value)
             self.curr_scope.put_variable(
                 param.name, ScopeVariable(value=value, type=param.type)
             )
-
         result = fundef.block.accept(self)
+        self.last_result = result
         self.curr_scope = self.scope_stack.pop()
+
         if self.returning_flag:
             self.returning_flag = False
-
-        self.scope_stack.push(self.curr_scope)
-        if (aspects_list := self.fun_aspect_map.get(fundef.identifier)) is not None:
-            for aspect in aspects_list:
-                aspect = self.aspects.get(aspect_name)
-                if aspect.aspect_block.after_statement is not None:
-                    aspect.aspect_block.after_statement.accept(self)
-
-        self.curr_scope = self.scope_stack.pop()
         return result
 
     def visit_fun_call_statement(self, fun: FunCallStatement):
@@ -361,6 +338,32 @@ class ParserVisitor:
         # NOTE: ensure that it gets the objects itself, not the value
         return attribute
 
+    def visit_cast_expr(self, cast_expr: CastingExpression):
+        # __import__("pdb").set_trace()
+        value = cast_expr.term.accept(self)
+        match cast_expr.type:
+            case TypeAnnotation.INT:
+                return self.try_cast_to(value, int)
+            case TypeAnnotation.FLOAT:
+                return self.try_cast_to(value, float)
+            case TypeAnnotation.STR:
+                return self.try_cast_to(value, str)
+            case TypeAnnotation.BOOL:
+                return self.try_cast_to(value, bool)
+
+    def try_cast_to(self, value, cast_type):
+        match type(value):
+            case builtins.int:
+                return cast_type(value)
+            case builtins.float:
+                return cast_type(value)
+            case builtins.str:
+                return cast_type(value)  # should raise some kind of error here
+            case builtins.bool:
+                return cast_type(value)  # will return 1
+            case _:
+                return None
+
     def visit_aspect_block(self, block: AspectBlock):
         for variable_declaration in block.variables:
             if not isinstance(variable_declaration, Variable):
@@ -386,7 +389,66 @@ class ParserVisitor:
         self.curr_scope = self.curr_aspect_stack.peek()
 
     def visit_after_statement(self, after: AfterStatement):
+        self.curr_scope = self.curr_aspect_stack.peek()
+        self.curr_scope.variables["function"].result = self.last_result
         new_aspect_scope = Scope(parent=self.curr_scope, return_type=None, variables={})
         self.curr_scope = new_aspect_scope
+        # __import__("pdb").set_trace()
         after.block.accept(self)
         self.curr_scope = self.curr_aspect_stack.peek()
+
+    def visit_is_expr(self, is_expr: IsExpression):
+        lex = is_expr.left_expression.accept(self)
+        if not isinstance(lex, TypeAnnotation):
+            raise ValueError("left expression of  'is' statement is not a type")
+        type = is_expr.right_expression
+        if not isinstance(lex, TypeAnnotation):
+            raise ValueError("right expression of  'is' statement is not a type")
+        return lex == type
+
+    def run_function_with_aspect(self, aspects_list, fundef):
+        values = self.last_result.copy()
+        # prepare args for aspect
+        arguments = []
+        for value, param in zip(values, fundef.parameters):
+            self.curr_scope.check_value_type(type=param.type, value=value)
+            arguments.append(
+                ScopeObject(name=param.name, value=value, type=param.type, args=None)
+            )
+
+        # setting curr_aspect_fun to know which function we are currently aspecting
+        self.curr_aspect_fun = ScopeObject(
+            name=fundef.identifier, type=fundef.type, args=arguments, value=None
+        )
+
+        self.scope_stack.push(self.curr_scope)
+        for aspect_name in aspects_list:
+            aspect = self.aspects.get(aspect_name)
+            aspect.accept(self)
+            if aspect.aspect_block.before_statement is not None:
+                aspect.aspect_block.before_statement.accept(self)
+        self.curr_scope = self.scope_stack.pop()
+
+        new_scope = Scope(parent=self.curr_scope, return_type=fundef.type, variables={})
+        self.scope_stack.push(self.curr_scope)
+        self.curr_scope = new_scope
+        for value, param in zip(values, fundef.parameters):
+            self.curr_scope.check_value_type(type=param.type, value=value)
+            self.curr_scope.put_variable(
+                param.name, ScopeVariable(value=value, type=param.type)
+            )
+        result = fundef.block.accept(self)
+        self.last_result = result
+        self.curr_scope = self.scope_stack.pop()
+        if self.returning_flag:
+            self.returning_flag = False
+
+        self.scope_stack.push(self.curr_scope)
+        for aspect_name in aspects_list:
+            aspect = self.aspects.get(aspect_name)
+            if aspect.aspect_block.after_statement is not None:
+                self.last_result = result
+                aspect.aspect_block.after_statement.accept(self)
+        self.curr_scope = self.scope_stack.pop()
+
+        return result

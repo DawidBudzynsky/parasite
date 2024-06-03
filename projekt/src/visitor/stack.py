@@ -18,6 +18,9 @@ class Stack:
             raise IndexError("peek from empty stack")
         return self.items[-1]
 
+    def get_items(self):
+        return self.items
+
     def size(self):
         return len(self.items)
 

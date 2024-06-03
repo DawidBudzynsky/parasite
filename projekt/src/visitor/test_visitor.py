@@ -30,6 +30,7 @@ from parser.values.or_expression import OrExpression
 from parser.values.plus_expression import AddExpresion
 from parser.values.string import String
 from parser.variable import Variable
+from projekt.src.parser.values.casting_expression import CastingExpression
 from visitor.scope import Scope, ScopeObject, ScopeVariable
 from visitor.visitor import ParserVisitor
 
@@ -386,6 +387,8 @@ def test_fun_call_with_aspect():
 #         return "a<2"
 #     }
 # }
+
+
 def test_visit_if_statement():
     v = ParserVisitor()
     v.curr_scope = Scope(
@@ -426,3 +429,76 @@ def test_print_func():
     ).accept(v)
     sys.stdout = original_stdout
     assert captured_output.getvalue().rstrip() == "a"
+
+
+def test_visit_cast():
+    v = ParserVisitor()
+    result = CastingExpression(
+        term=Integer(value="0", position=(0, 0)), type=TypeAnnotation.BOOL
+    ).accept(v)
+    assert result is False
+
+
+@pytest.mark.parametrize(
+    "input_expression, expected",
+    [
+        (
+            CastingExpression(
+                term=Integer(value=0, position=(0, 0)), type=TypeAnnotation.BOOL
+            ),
+            False,
+        ),
+        (
+            CastingExpression(
+                term=Integer(value=0, position=(0, 0)), type=TypeAnnotation.FLOAT
+            ),
+            0.0,
+        ),
+        (
+            CastingExpression(
+                term=Integer(value=0, position=(0, 0)), type=TypeAnnotation.STR
+            ),
+            "0",
+        ),
+        (
+            CastingExpression(
+                term=String(value="12", position=(0, 0)), type=TypeAnnotation.INT
+            ),
+            12,
+        ),
+        (
+            CastingExpression(
+                term=String(value="12", position=(0, 0)), type=TypeAnnotation.FLOAT
+            ),
+            12.0,
+        ),
+        (
+            CastingExpression(
+                term=String(value="12", position=(0, 0)), type=TypeAnnotation.BOOL
+            ),
+            True,
+        ),
+        (
+            CastingExpression(
+                term=Float(value=12.0, position=(0, 0)), type=TypeAnnotation.INT
+            ),
+            12,
+        ),
+        (
+            CastingExpression(
+                term=Float(value=12.0, position=(0, 0)), type=TypeAnnotation.STR
+            ),
+            "12.0",
+        ),
+        (
+            CastingExpression(
+                term=Float(value=12.0, position=(0, 0)), type=TypeAnnotation.BOOL
+            ),
+            True,
+        ),
+    ],
+)
+def test_visit_cast_table_test(input_expression, expected):
+    v = ParserVisitor()
+    result = input_expression.accept(v)
+    assert result == expected
