@@ -23,7 +23,9 @@ from parser.values.plus_expression import AddExpresion
         (
             "(a+b) -> str",
             CastingExpression(
-                AddExpresion(Identifier("a", (1, 2)), Identifier("b", (1, 4))),
+                AddExpresion(
+                    Identifier("a", (1, 2)), Identifier("b", (1, 4)), position=(1, 7)
+                ),
                 TypeAnnotation.STR,
             ),
         ),
@@ -34,7 +36,9 @@ from parser.values.plus_expression import AddExpresion
         (
             "(2*3) -> str",
             CastingExpression(
-                MultiplyExpression(Integer(2, (1, 2)), Integer(3, (1, 4))),
+                MultiplyExpression(
+                    Integer(2, (1, 2)), Integer(3, (1, 4)), position=(1, 3)
+                ),
                 TypeAnnotation.STR,
             ),
         ),

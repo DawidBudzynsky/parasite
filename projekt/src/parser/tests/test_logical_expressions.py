@@ -16,7 +16,7 @@ from parser.values.plus_expression import AddExpresion
             "1 and (2+3)",
             AndExpression(
                 Integer(1, (1, 1)),
-                AddExpresion(Integer(2, (1, 8)), Integer(3, (1, 10))),
+                AddExpresion(Integer(2, (1, 8)), Integer(3, (1, 10)), position=(1, 9)),
             ),
         ),
         (

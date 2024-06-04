@@ -22,6 +22,7 @@ OBJECT_NO_ATTR = "Error: [%s] object doesnt have attribute [%s]; [%d:%d]"
 ASPECT_BLOCK = (
     "Error: Only variable declarations are available in aspect block; [%d:%d]"
 )
+MISMATCH_TYPE = "Error: Cannot assign to variable of type [%s]; [%d:%d]"
 
 
 class NotDeclared(Exception):
@@ -96,6 +97,14 @@ class NoAttributeException(Exception):
 class AspectBlockException(Exception):
     def __init__(self, position=(0, 0)):
         message = ASPECT_BLOCK % (position[0], position[1])
+        super().__init__(message)
+        self.message = message
+        self.position = position
+
+
+class TypeMissmatch(Exception):
+    def __init__(self, base_type, position=(0, 0)):
+        message = MISMATCH_TYPE % (base_type, position[0], position[1])
         super().__init__(message)
         self.message = message
         self.position = position

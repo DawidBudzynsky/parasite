@@ -95,8 +95,13 @@ from parser.variable import Variable
             "return ((7+3)*(4-2))",
             ReturnStatement(
                 MultiplyExpression(
-                    AddExpresion(Integer(7, (1, 10)), Integer(3, (1, 12))),
-                    SubtractExpression(Integer(4, (1, 16)), Integer(2, (1, 18))),
+                    AddExpresion(
+                        Integer(7, (1, 10)), Integer(3, (1, 12)), position=(1, 9)
+                    ),
+                    SubtractExpression(
+                        Integer(4, (1, 16)), Integer(2, (1, 18)), position=(1, 17)
+                    ),
+                    position=(1, 14),
                 )
             ),
         ),

@@ -17,14 +17,21 @@ from parser.values.plus_expression import AddExpresion
         ),
         (
             "return (20+14)",
-            ReturnStatement(AddExpresion(Integer(20, (1, 9)), Integer(14, (1, 12)))),
+            ReturnStatement(
+                AddExpresion(Integer(20, (1, 9)), Integer(14, (1, 12)), position=(1, 1))
+            ),
         ),
         (
             "return ((7+3)*(4-2))",
             ReturnStatement(
                 MultiplyExpression(
-                    AddExpresion(Integer(7, (1, 10)), Integer(3, (1, 12))),
-                    SubtractExpression(Integer(4, (1, 16)), Integer(2, (1, 18))),
+                    AddExpresion(
+                        Integer(7, (1, 10)), Integer(3, (1, 12)), position=(1, 11)
+                    ),
+                    SubtractExpression(
+                        Integer(4, (1, 16)), Integer(2, (1, 18)), position=(1, 17)
+                    ),
+                    position=(1, 14),
                 )
             ),
         ),
@@ -32,8 +39,11 @@ from parser.values.plus_expression import AddExpresion
             "return ((7+3) * identifier1)",
             ReturnStatement(
                 MultiplyExpression(
-                    AddExpresion(Integer(7, (1, 10)), Integer(3, (1, 12))),
+                    AddExpresion(
+                        Integer(7, (1, 10)), Integer(3, (1, 12)), position=(1, 11)
+                    ),
                     Identifier("identifier1", (1, 17)),
+                    position=(1, 15),
                 )
             ),
         ),

@@ -318,6 +318,7 @@ class Parser:
         if (constructor := self.relation_operators.get(self.token.token_type)) is None:
             return left_logic_factor
         operator_symbol = self.symbols_map.get(self.token.token_type)
+        position = self.token.position
         self.consume_token()
 
         if (right_logic_factor := self.parse_additive()) is None:
@@ -326,7 +327,7 @@ class Parser:
                 position=self.token.position,
             )
 
-        left_logic_factor = constructor(left_logic_factor, right_logic_factor)
+        left_logic_factor = constructor(left_logic_factor, right_logic_factor, position)
         return left_logic_factor
 
     # additive_term = multiplicative_term, { ("+" | "-"), multiplicative_term } ;
@@ -335,6 +336,7 @@ class Parser:
             return None
         while (constructor := self.addition_map.get(self.token.token_type)) is not None:
             operator_symbol = self.symbols_map.get(self.token.token_type)
+            position = self.token.position
             self.consume_token()
             if (right_logic_factor := self.parse_multiplicative()) is None:
                 raise MissingExpression(
@@ -342,7 +344,9 @@ class Parser:
                     position=self.token.position,
                 )
 
-            left_logic_factor = constructor(left_logic_factor, right_logic_factor)
+            left_logic_factor = constructor(
+                left_logic_factor, right_logic_factor, position
+            )
         return left_logic_factor
 
     # multiplicative_term = unary_application, { ("*" | "/"), unary_application } ;
@@ -353,13 +357,16 @@ class Parser:
             constructor := self.multiply_or_divide_map.get(self.token.token_type)
         ) is not None:
             operator_symbol = self.symbols_map.get(self.token.token_type)
+            position = self.token.position
             self.consume_token()
             if (right_logic_factor := self.parse_unary()) is None:
                 raise MissingExpression(
                     operator=operator_symbol,
                     position=self.token.position,
                 )
-            left_logic_factor = constructor(left_logic_factor, right_logic_factor)
+            left_logic_factor = constructor(
+                left_logic_factor, right_logic_factor, position
+            )
         return left_logic_factor
 
     # unary_application = [ ("-" | "!") ], casting ;
@@ -425,13 +432,14 @@ class Parser:
         if (left_item := self.parse_identifier_or_call()) is None:
             return None
         while self.token.token_type == Type.DOT:
+            position = self.token.position
             self.consume_token()
             if (right_item := self.parse_identifier_or_call()) is None:
                 raise MissingExpression(
                     operator=self.symbols_map.get(Type.DOT),
                     position=self.token.position,
                 )
-            left_item = ObjectAccessExpression(left_item, right_item)
+            left_item = ObjectAccessExpression(left_item, right_item, position)
         return left_item
 
     # identifier_or_call = identifier, ["(", arguments, ")"]

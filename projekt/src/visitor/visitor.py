@@ -36,6 +36,9 @@ from parser.values.plus_expression import AddExpresion
 from parser.values.string import String
 from parser.variable import Variable
 from typing import Dict
+
+from visitor.callstack import CallStack
+from visitor.embedded_fun import EmbeddedFunction
 from visitor.scope import Scope, ScopeObject, ScopeVariable
 from visitor.stack import Stack
 from visitor.visitor_exceptions import (
@@ -46,24 +49,15 @@ from visitor.visitor_exceptions import (
     NoAttributeException,
     NotDeclared,
     ObjectAccessException,
+    Redefinition,
+    TypeMissmatch,
+    WrongReturnType,
 )
-
-
-class EmbeddedFunction:
-    def __init__(self, name, func):
-        self.name = name
-        self.func = func
-
-    def accept(self, visitator):
-        return visitator.visit_embedded_function(self)
-
-
-embedded_functinos = {"print": EmbeddedFunction(name="print", func=print)}
 
 
 class ParserVisitor:
     def __init__(self):
-        self.functions = embedded_functinos
+        self.functions = {"print": EmbeddedFunction(name="print", func=print)}
         self.aspects: Dict[str, Aspect] = {}
         self.scope_stack = Stack()
         self.curr_scope = Scope(parent=None, return_type=None, variables={})
@@ -79,6 +73,8 @@ class ParserVisitor:
             TypeAnnotation.STR: "str",
             TypeAnnotation.BOOL: "bool",
         }
+        self.max_depth = 200
+        self.call_stack = CallStack()
 
     def set_function_to_aspect_map(self, fun_aspect_map):
         self.fun_aspect_map = fun_aspect_map
@@ -113,7 +109,7 @@ class ParserVisitor:
         value = None
         if variable.value is not None:
             value = variable.value.accept(self)
-        self.curr_scope.put_variable(
+        self.put_variable(
             variable.name,
             variable.position,
             ScopeVariable(type=variable.type, value=value),
@@ -140,6 +136,7 @@ class ParserVisitor:
             raise ExprWrongType(
                 sum.__class__.__name__,
                 f"{self.type_annotations.get(TypeAnnotation.INT)}, {self.type_annotations.get(TypeAnnotation.FLOAT)}",
+                position=sum.position,
             )
 
     def visit_sub_expr(self, sub: SubtractExpression):
@@ -151,6 +148,7 @@ class ParserVisitor:
             raise ExprWrongType(
                 sub.__class__.__name__,
                 f"{self.type_annotations.get(TypeAnnotation.INT)}, {self.type_annotations.get(TypeAnnotation.FLOAT)}",
+                position=sub.position,
             )
 
     def visit_multiply_expr(self, mul: MultiplyExpression):
@@ -162,6 +160,7 @@ class ParserVisitor:
             raise ExprWrongType(
                 mul.__class__.__name__,
                 f"{self.type_annotations.get(TypeAnnotation.INT)}, {self.type_annotations.get(TypeAnnotation.FLOAT)}",
+                position=mul.position,
             )
 
     def visit_divide_expression(self, div: DivideExpression):
@@ -173,6 +172,7 @@ class ParserVisitor:
             raise ExprWrongType(
                 div.__class__.__name__,
                 f"{self.type_annotations.get(TypeAnnotation.INT)}, {self.type_annotations.get(TypeAnnotation.FLOAT)}",
+                div.position,
             )
 
     def visit_negate_expression(self, not_operator: NegateExpression):
@@ -181,6 +181,7 @@ class ParserVisitor:
             raise ExprWrongType(
                 not_operator.__class__.__name__,
                 f"{self.type_annotations.get(TypeAnnotation.BOOL)}",
+                position=not_operator.position,
             )
         return not bool(obj)
 
@@ -191,6 +192,7 @@ class ParserVisitor:
             raise ExprWrongType(
                 and_expr.__class__.__name__,
                 f"{self.type_annotations.get(TypeAnnotation.BOOL)}",
+                position=and_expr.position,
             )
         return bool(lex) and bool(rex)
 
@@ -201,6 +203,7 @@ class ParserVisitor:
             raise ExprWrongType(
                 or_expr.__class__.__name__,
                 f"{self.type_annotations.get(TypeAnnotation.BOOL)}",
+                position=or_expr.position,
             )
         return bool(lex) or bool(rex)
 
@@ -261,27 +264,41 @@ class ParserVisitor:
     def visit_assign_statement(self, assign: AssignStatement):
         name = assign.identifier.name
         value = assign.expression.accept(self)
-        self.curr_scope.set_value(name, assign.position, value)
+        self.set_value(name, assign.position, value)
 
     def visit_return_statement(self, rs: ReturnStatement):
         # expression can be None
         if (expression := rs.expression) is None:
             return None
         value = expression.accept(self)
-        # NOTE: może tutaj powininem sprawdzać errory
 
         # NOTE: position for now
         position = None
         if hasattr(expression, "position"):
             position = expression.position
 
-        self.curr_scope.check_return_type(value, position)
+        # NOTE: może tutaj powininem sprawdzać errory
+        self.check_return_type(value, position)
         self.returning_flag = True
         return value
 
-    def visit_embedded_function(self, e_func: EmbeddedFunction):
-        for arg in self.last_result:
-            e_func.func(arg)
+    def visit_fun_call_statement(self, fun: FunCallStatement):
+        if (fundef := self.functions.get(fun.name)) is None:
+            raise FunctionNotDeclared(fun.name, fun.position)
+
+        if self.call_stack.recursion_count(fun.name) > self.max_depth:
+            raise ValueError("recursion depth error")
+
+        values = []
+        for argument in fun.arguments:
+            values.append((argument.accept(self), argument.position))
+        self.last_result = values  # NOTE: i guess i can do that differently
+
+        self.call_stack.push(fun.name)
+        result = fundef.accept(self)
+        self.call_stack.pop(fun.name)
+
+        return result
 
     def visit_function_declaration(self, fundef: FunctionDef):
         if len(fundef.parameters) != len(self.last_result):
@@ -296,9 +313,10 @@ class ParserVisitor:
         new_scope = Scope(parent=self.curr_scope, return_type=fundef.type, variables={})
         self.scope_stack.push(self.curr_scope)
         self.curr_scope = new_scope
-        for value, param in zip(values, fundef.parameters):
-            self.curr_scope.check_value_type(type=param.type, value=value)
-            self.curr_scope.put_variable(
+        for value_pos, param in zip(values, fundef.parameters):
+            value, pos = value_pos
+            self.check_value_type(type=param.type, value=value, position=pos)
+            self.put_variable(
                 param.name, param.position, ScopeVariable(value=value, type=param.type)
             )
         result = fundef.block.accept(self)
@@ -309,16 +327,57 @@ class ParserVisitor:
             self.returning_flag = False
         return result
 
-    def visit_fun_call_statement(self, fun: FunCallStatement):
-        if (fundef := self.functions.get(fun.name)) is None:
-            raise FunctionNotDeclared(fun.name, fun.position)
+    def visit_embedded_function(self, e_func: EmbeddedFunction):
+        for arg in self.last_result:
+            value, _ = arg
+            e_func.func(value)
 
-        values = []
-        for argument in fun.arguments:
-            values.append(argument.accept(self))
-        self.last_result = values  # NOTE: i guess i can do that differently
+    def run_function_with_aspect(self, aspects_list, fundef):
+        values = self.last_result.copy()
+        # prepare args for aspect
+        arguments = []
+        for value_pos, param in zip(values, fundef.parameters):
+            value, pos = value_pos
+            self.check_value_type(type=param.type, value=value, position=pos)
+            arguments.append(
+                ScopeObject(name=param.name, value=value, type=param.type, args=None)
+            )
 
-        result = fundef.accept(self)
+        # setting curr_aspect_fun to know which function we are currently aspecting
+        self.curr_aspect_fun = ScopeObject(
+            name=fundef.identifier, type=fundef.type, args=arguments, value=None
+        )
+
+        self.scope_stack.push(self.curr_scope)
+        for aspect_name in aspects_list:
+            aspect = self.aspects.get(aspect_name)
+            aspect.accept(self)
+            if aspect.aspect_block.before_statement is not None:
+                aspect.aspect_block.before_statement.accept(self)
+        self.curr_scope = self.scope_stack.pop()
+
+        new_scope = Scope(parent=self.curr_scope, return_type=fundef.type, variables={})
+        self.scope_stack.push(self.curr_scope)
+        self.curr_scope = new_scope
+        for value_pos, param in zip(values, fundef.parameters):
+            value, pos = value_pos
+            self.check_value_type(type=param.type, value=value, position=pos)
+            self.put_variable(
+                param.name, param.position, ScopeVariable(value=value, type=param.type)
+            )
+        result = fundef.block.accept(self)
+        self.last_result = result
+        self.curr_scope = self.scope_stack.pop()
+        if self.returning_flag:
+            self.returning_flag = False
+
+        self.scope_stack.push(self.curr_scope)
+        for aspect_name in aspects_list:
+            aspect = self.aspects.get(aspect_name)
+            if aspect.aspect_block.after_statement is not None:
+                self.last_result = result
+                aspect.aspect_block.after_statement.accept(self)
+        self.curr_scope = self.scope_stack.pop()
 
         return result
 
@@ -365,7 +424,7 @@ class ParserVisitor:
         self.curr_scope = new_scope
 
         # initialize "arg" in scope
-        self.curr_scope.put_variable(
+        self.put_variable(
             v_name=for_s.identifier.name, position=None, scope_variable=None
         )
         arg_list = for_s.expression.accept(self)  # visiting object_access
@@ -379,17 +438,16 @@ class ParserVisitor:
         self.curr_scope = self.scope_stack.pop()
         return None
 
-    # NOTE: trochę zakładamy, że po kropce zawsze jest identifier
     def visit_access_expr(self, obj: ObjectAccessExpression):
         base_object = obj.left_expression.accept(self)
         if not isinstance(base_object, ScopeObject):
             raise ObjectAccessException(obj.left_expression.name)
-
         if not isinstance(obj.right_expression, Identifier):
             raise ObjectAccessException(obj.right_expression.name)
+
         attribute_name = obj.right_expression.name
         if not hasattr(base_object, attribute_name):
-            raise NoAttributeException(base_object, attribute_name)
+            raise NoAttributeException(base_object.name, attribute_name)
         attribute = getattr(base_object, attribute_name)
         return attribute
 
@@ -412,9 +470,9 @@ class ParserVisitor:
             case builtins.float:
                 return cast_type(value)
             case builtins.str:
-                return cast_type(value)  # should raise some kind of error here
+                return cast_type(value)
             case builtins.bool:
-                return cast_type(value)  # will return 1
+                return cast_type(value)
             case _:
                 return None
 
@@ -463,49 +521,91 @@ class ParserVisitor:
             )
         return lex == type
 
-    def run_function_with_aspect(self, aspects_list, fundef):
-        values = self.last_result.copy()
-        # prepare args for aspect
-        arguments = []
-        for value, param in zip(values, fundef.parameters):
-            self.curr_scope.check_value_type(type=param.type, value=value)
-            arguments.append(
-                ScopeObject(name=param.name, value=value, type=param.type, args=None)
-            )
+    def check_return_type(self, value, position):
+        scope_pointer = self.curr_scope
+        while scope_pointer.return_type is None:
+            scope_pointer = scope_pointer.parent
+        return_type = scope_pointer.return_type
+        match return_type:
+            case TypeAnnotation.INT:
+                if isinstance(value, bool):
+                    raise WrongReturnType(
+                        given_value=type(value).__name__,
+                        expected_value=self.type_annotations.get(TypeAnnotation.INT),
+                        position=position,
+                    )
 
-        # setting curr_aspect_fun to know which function we are currently aspecting
-        self.curr_aspect_fun = ScopeObject(
-            name=fundef.identifier, type=fundef.type, args=arguments, value=None
-        )
+                if not isinstance(value, int):
+                    raise WrongReturnType(
+                        given_value=type(value).__name__,
+                        expected_value=self.type_annotations.get(TypeAnnotation.INT),
+                        position=position,
+                    )
+                return
+            case TypeAnnotation.FLOAT:
+                if not isinstance(value, float):
+                    raise WrongReturnType(
+                        given_value=type(value).__name__,
+                        expected_value=self.type_annotations.get(TypeAnnotation.FLOAT),
+                        position=position,
+                    )
+                return
+            case TypeAnnotation.STR:
+                if not isinstance(value, str):
+                    raise WrongReturnType(
+                        given_value=type(value).__name__,
+                        expected_value=self.type_annotations.get(TypeAnnotation.STR),
+                        position=position,
+                    )
+                return
+            case TypeAnnotation.BOOL:
+                if not isinstance(value, bool):
+                    raise WrongReturnType(
+                        given_value=type(value).__name__,
+                        expected_value=self.type_annotations.get(TypeAnnotation.BOOL),
+                        position=position,
+                    )
+                return
 
-        self.scope_stack.push(self.curr_scope)
-        for aspect_name in aspects_list:
-            aspect = self.aspects.get(aspect_name)
-            aspect.accept(self)
-            if aspect.aspect_block.before_statement is not None:
-                aspect.aspect_block.before_statement.accept(self)
-        self.curr_scope = self.scope_stack.pop()
+    # TODO: lepsze errory tutaj i pozycja
+    def check_value_type(self, type, value, position):
+        match type:
+            case TypeAnnotation.INT:
+                if isinstance(value, bool) or not isinstance(value, int):
+                    raise TypeMissmatch(
+                        self.type_annotations.get(TypeAnnotation.INT), position
+                    )
+                return value
+            case TypeAnnotation.FLOAT:
+                if not isinstance(value, float):
+                    raise TypeMissmatch(
+                        self.type_annotations.get(TypeAnnotation.FLOAT), position
+                    )
+                return value
+            case TypeAnnotation.BOOL:
+                if not isinstance(value, bool):
+                    raise TypeMissmatch(
+                        self.type_annotations.get(TypeAnnotation.BOOL), position
+                    )
+                return value
+            case TypeAnnotation.STR:
+                if not isinstance(value, str):
+                    raise TypeMissmatch(
+                        self.type_annotations.get(TypeAnnotation.STR), position
+                    )
+                return value
+            case _:
+                return None  # NOTE: should be some kind of error
 
-        new_scope = Scope(parent=self.curr_scope, return_type=fundef.type, variables={})
-        self.scope_stack.push(self.curr_scope)
-        self.curr_scope = new_scope
-        for value, param in zip(values, fundef.parameters):
-            self.curr_scope.check_value_type(type=param.type, value=value)
-            self.curr_scope.put_variable(
-                param.name, param.position, ScopeVariable(value=value, type=param.type)
-            )
-        result = fundef.block.accept(self)
-        self.last_result = result
-        self.curr_scope = self.scope_stack.pop()
-        if self.returning_flag:
-            self.returning_flag = False
+    def put_variable(self, v_name, position, scope_variable):
+        if self.curr_scope.in_current_scope(v_name):
+            raise Redefinition(v_name, position)
+        if scope_variable is not None:
+            self.check_value_type(scope_variable.type, scope_variable.value, position)
+        self.curr_scope.variables[v_name] = scope_variable
 
-        self.scope_stack.push(self.curr_scope)
-        for aspect_name in aspects_list:
-            aspect = self.aspects.get(aspect_name)
-            if aspect.aspect_block.after_statement is not None:
-                self.last_result = result
-                aspect.aspect_block.after_statement.accept(self)
-        self.curr_scope = self.scope_stack.pop()
-
-        return result
+    def set_value(self, v_name, position, value):
+        if (variable := self.curr_scope.in_scope(v_name)) is None:
+            raise NotDeclared(v_name, position)
+        new_value = self.check_value_type(variable.type, value, position)
+        variable.value = new_value

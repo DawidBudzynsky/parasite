@@ -14,12 +14,11 @@ def main(file_name):
             parser = Parser(lexer)
             visitor = ParserVisitor()
             interpreter = Interpreter(parser, visitor)
-            result = interpreter.run()
-            print(result)
+            interpreter.run()
     except FileNotFoundError:
         print(f"The file '{file_name}' was not found.")
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(e)
 
 
 if __name__ == "__main__":
