@@ -1,0 +1,8 @@
+sum(a: int, b: int) int {
+    return a + b
+}
+
+main(){
+    int var = 5
+    print(var)
+}

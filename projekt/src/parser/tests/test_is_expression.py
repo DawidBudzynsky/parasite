@@ -1,9 +1,7 @@
-from os import posix_spawnp
 import pytest
 from parser.tests.test_utils import create_parser
 from parser.type_annotations import TypeAnnotation
 from parser.values.identifier_expression import Identifier
-from parser.values.integer_type import IntegerType
 from parser.values.is_expression import IsExpression
 
 
@@ -21,6 +19,5 @@ from parser.values.is_expression import IsExpression
 )
 def test_if_statement(input_str, expected):
     parser = create_parser(input_str)
-    # __import__("pdb").set_trace()
     expression = parser.parse_relation()
     assert expression == expected

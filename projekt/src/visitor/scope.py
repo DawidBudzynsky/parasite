@@ -1,7 +1,11 @@
+import builtins
 from typing import TypeAlias
 from parser.exceptions import InvalidSyntaxVerbose
 from parser.type_annotations import TypeAnnotation
 from parser.variable import Variable
+from visitor.visitor_exceptions import WrongReturnType
+from visitor.visitor_exceptions import NotDeclared
+from visitor.visitor_exceptions import Redefinition
 
 
 class ScopeVariable:
@@ -65,22 +69,26 @@ class Scope:
             return None
         return self.variables.get(name)
 
-    def put_variable(self, v_name, scope_variable):
+    def put_variable(self, v_name, position, scope_variable):
         if self.in_current_scope(v_name):
-            raise ValueError("variable redefinition")
+            raise Redefinition(v_name, position)
         if scope_variable is not None:
             self.check_value_type(scope_variable.type, scope_variable.value)
         self.variables[v_name] = scope_variable
 
-    def set_value(self, v_name, value):
+    def set_value(self, v_name, position, value):
         if (variable := self.in_scope(v_name)) is None:
-            raise ValueError("Variable not declared")
+            raise NotDeclared(v_name, position)
         new_value = self.check_value_type(variable.type, value)
         variable.value = new_value
 
     def check_value_type(self, type, value):
         match type:
             case TypeAnnotation.INT:
+                if isinstance(value, bool):
+                    raise ValueError(
+                        "cannot assign boolean to variable of type integer"
+                    )
                 if not isinstance(value, int):
                     raise ValueError("cannot assign to variable of type integer")
                 return value
@@ -99,16 +107,25 @@ class Scope:
             case _:
                 return None  # NOTE: should be some kind of error
 
-    def check_return_type(self, value):
+    def check_return_type(self, value, position):
         scope_pointer = self
         while scope_pointer.return_type is None:
             scope_pointer = scope_pointer.parent
         return_type = scope_pointer.return_type
         match return_type:
             case TypeAnnotation.INT:
+                if isinstance(value, bool):
+                    raise WrongReturnType(
+                        given_value=type(value).__name__,
+                        expected_value="int",
+                        position=position,
+                    )
+
                 if not isinstance(value, int):
-                    raise ValueError(
-                        f"Wrong return value: {type(value).__name__}, should be int"
+                    raise WrongReturnType(
+                        given_value=type(value).__name__,
+                        expected_value="int",
+                        position=position,
                     )
                 return
             case TypeAnnotation.FLOAT:

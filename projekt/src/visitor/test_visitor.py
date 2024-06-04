@@ -30,7 +30,7 @@ from parser.values.or_expression import OrExpression
 from parser.values.plus_expression import AddExpresion
 from parser.values.string import String
 from parser.variable import Variable
-from projekt.src.parser.values.casting_expression import CastingExpression
+from parser.values.casting_expression import CastingExpression
 from visitor.scope import Scope, ScopeObject, ScopeVariable
 from visitor.visitor import ParserVisitor
 
@@ -179,7 +179,6 @@ def test_visit_fun_call():
             position=(0, 0),
         )
     }
-    # __import__("pdb").set_trace()
     result = FunCallStatement(
         identifier="add",
         arguments=[Integer(1, position=(0, 0)), Integer(2, position=(0, 0))],
@@ -269,7 +268,6 @@ def test_for_each_statement():
             )
         },
     )
-    # __import__("pdb").set_trace()
     result = ForEachStatement(
         identifier=Identifier("arg", position=(0, 0)),
         expression=ObjectAccessExpression(
