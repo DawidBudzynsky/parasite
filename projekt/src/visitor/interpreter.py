@@ -22,5 +22,4 @@ class Interpreter:
 
         for fname, function in functions.items():
             if fname == "main":
-                # __import__("pdb").set_trace()
                 function.accept(self.visitor)
