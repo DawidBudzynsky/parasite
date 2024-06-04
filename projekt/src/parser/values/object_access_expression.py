@@ -3,8 +3,8 @@ from parser.values.operator_expression import OperatorExpression
 
 # TODO: position
 class ObjectAccessExpression(OperatorExpression):
-    def __init__(self, left_expression, right_expression):
-        super().__init__(left_expression, right_expression)
+    def __init__(self, left_expression, right_expression, position=None):
+        super().__init__(left_expression, right_expression, position)
 
     def __eq__(self, other):
         return (

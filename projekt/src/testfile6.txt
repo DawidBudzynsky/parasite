@@ -1,0 +1,13 @@
+sayHello(x: str) {
+	print("hello " + x)
+}
+
+
+main(){
+    int var1 = 1
+    bool var3 = false
+    int var = 1
+    if var1 or var3 {
+        sayHello("alice")
+    }
+}

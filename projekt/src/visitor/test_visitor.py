@@ -40,8 +40,13 @@ from visitor.visitor import ParserVisitor
     [
         (
             AddExpresion(
-                AddExpresion(Integer(1, position=(1, 1)), Integer(2, position=(1, 2))),
+                AddExpresion(
+                    Integer(1, position=(1, 1)),
+                    Integer(2, position=(1, 2)),
+                    position=(0, 0),
+                ),
                 Integer(3, position=(1, 3)),
+                position=(1, 2),
             ),
             6,
         ),
@@ -49,6 +54,7 @@ from visitor.visitor import ParserVisitor
             AddExpresion(
                 String("a", position=(1, 1)),
                 String("b", position=(1, 2)),
+                position=(0, 0),
             ),
             "ab",
         ),
@@ -56,6 +62,7 @@ from visitor.visitor import ParserVisitor
             AddExpresion(
                 Float(1.0, position=(1, 1)),
                 Integer(2, position=(1, 2)),
+                position=(0, 0),
             ),
             3.0,
         ),
@@ -63,16 +70,22 @@ from visitor.visitor import ParserVisitor
         (MinusNegateExpression(Float(1.5, position=(1, 1))), -1.5),
         (
             SubtractExpression(
-                Integer(2, position=(1, 1)), Integer(1, position=(1, 2))
+                Integer(2, position=(1, 1)),
+                Integer(1, position=(1, 2)),
+                position=(0, 0),
             ),
             1,
         ),
         (
-            SubtractExpression(Float(2, position=(1, 1)), Integer(1, position=(1, 2))),
+            SubtractExpression(
+                Float(2, position=(1, 1)), Integer(1, position=(1, 2)), position=(0, 0)
+            ),
             1.0,
         ),
         (
-            MultiplyExpression(Float(2, position=(1, 1)), Integer(3, position=(1, 2))),
+            MultiplyExpression(
+                Float(2, position=(1, 1)), Integer(3, position=(1, 2)), position=(0, 0)
+            ),
             6.0,
         ),
         (
@@ -131,7 +144,7 @@ def test_assign():
     AssignStatement(
         identifier=Identifier("a", position=(0, 0)),
         expression=AddExpresion(
-            Integer(2, position=(2, 1)), Integer(2, position=(2, 2))
+            Integer(2, position=(2, 1)), Integer(2, position=(2, 2)), position=(0, 0)
         ),
         position=(1, 1),
     ).accept(v)
@@ -145,7 +158,7 @@ def test_return():
     v.curr_scope = Scope(parent=None, return_type=TypeAnnotation.INT, variables={})
     result = ReturnStatement(
         expression=AddExpresion(
-            Integer(2, position=(1, 1)), Integer(2, position=(1, 2))
+            Integer(2, position=(1, 1)), Integer(2, position=(1, 2)), position=(0, 0)
         )
     ).accept(v)
     assert result == 4
@@ -170,6 +183,7 @@ def test_visit_fun_call():
                         value=AddExpresion(
                             Identifier("a", position=(0, 0)),
                             Identifier("b", position=(0, 0)),
+                            position=(0, 0),
                         ),
                         position=(0, 0),
                     ),
@@ -206,6 +220,7 @@ def test_visit_while():
                             AddExpresion(
                                 left_expression=Identifier(name="i", position=(0, 0)),
                                 right_expression=Integer(1, position=(0, 0)),
+                                position=(0, 0),
                             ),
                             position=(0, 0),
                         )
@@ -357,6 +372,7 @@ def test_fun_call_with_aspect():
                         expression=AddExpresion(
                             left_expression=Identifier("a", position=(0, 0)),
                             right_expression=Identifier("b", position=(0, 0)),
+                            position=(0, 0),
                         )
                     ),
                 ]

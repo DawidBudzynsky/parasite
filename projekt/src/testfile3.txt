@@ -7,7 +7,7 @@ fibonacci(n: int) int {
 }
 
 main(){
-    int result = fibonacci(10)
+    int result = fibonacci(35)
     print(result)
 }
 

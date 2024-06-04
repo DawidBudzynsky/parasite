@@ -17,7 +17,9 @@ from parser.variable import Variable
             Variable(
                 "a",
                 TypeAnnotation.INT,
-                value=MultiplyExpression(Integer(1, (1, 9)), Integer(3, (1, 13))),
+                value=MultiplyExpression(
+                    Integer(1, (1, 9)), Integer(3, (1, 13)), position=(1, 11)
+                ),
                 position=(1, 1),
             ),
         ),
@@ -26,7 +28,9 @@ from parser.variable import Variable
             Variable(
                 "a",
                 TypeAnnotation.INT,
-                value=AddExpresion(Integer(1, (1, 9)), Integer(2, (1, 13))),
+                value=AddExpresion(
+                    Integer(1, (1, 9)), Integer(2, (1, 13)), position=(1, 11)
+                ),
                 position=(1, 1),
             ),
         ),
@@ -36,8 +40,11 @@ from parser.variable import Variable
                 "a",
                 TypeAnnotation.INT,
                 value=AddExpresion(
-                    MultiplyExpression(Integer(1, (1, 9)), Integer(2, (1, 13))),
+                    MultiplyExpression(
+                        Integer(1, (1, 9)), Integer(2, (1, 13)), position=(1, 11)
+                    ),
                     Integer(1, (1, 17)),
+                    position=(1, 15),
                 ),
                 position=(1, 1),
             ),
@@ -49,7 +56,10 @@ from parser.variable import Variable
                 TypeAnnotation.INT,
                 value=MultiplyExpression(
                     Integer(3, (1, 9)),
-                    AddExpresion(Integer(2, (1, 14)), Integer(2, (1, 18))),
+                    AddExpresion(
+                        Integer(2, (1, 14)), Integer(2, (1, 18)), position=(1, 16)
+                    ),
+                    position=(1, 11),
                 ),
                 position=(1, 1),
             ),
