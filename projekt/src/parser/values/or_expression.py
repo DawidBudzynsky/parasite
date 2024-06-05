@@ -18,4 +18,4 @@ class OrExpression(OperatorExpression, Node):
         )
 
     def accept(self, visitator):
-        return visitator.visit_or_expression(self)
+        visitator.visit_or_expression(self)

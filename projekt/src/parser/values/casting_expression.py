@@ -18,4 +18,4 @@ class CastingExpression(Expression):
         return f"({self.term} -> {self.type})"
 
     def accept(self, visitator):
-        return visitator.visit_cast_expr(self)
+        visitator.visit_cast_expr(self)

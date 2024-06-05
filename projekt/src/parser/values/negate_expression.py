@@ -13,4 +13,4 @@ class NegateExpression(Node):
         return f"(Negate: !{self.casting})"
 
     def accept(self, visitator):
-        return visitator.visit_negate_expression(self)
+        visitator.visit_negate_expression(self)

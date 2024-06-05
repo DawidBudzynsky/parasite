@@ -13,4 +13,4 @@ class Float(Node):
         return f"(FLOAT: {self.value}, {self.position})"
 
     def accept(self, visitator):
-        return visitator.visit_float(self)
+        visitator.visit_float(self)

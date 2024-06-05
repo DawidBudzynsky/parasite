@@ -13,4 +13,4 @@ class Integer(Node):
         return f"(INTEGER: {self.value}, {self.position})"
 
     def accept(self, visitator):
-        return visitator.visit_integer(self)
+        visitator.visit_integer(self)

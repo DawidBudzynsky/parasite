@@ -13,4 +13,4 @@ class String(Node):
         return f"(STRING: {self.value}, {self.position})"
 
     def accept(self, visitator):
-        return visitator.visit_string(self)
+        visitator.visit_string(self)

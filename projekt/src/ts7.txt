@@ -1,0 +1,10 @@
+square(x: int) int {
+    return x*x
+}
+
+main(){
+    int x = 2
+    int var2 = square(x)
+    print(x)
+    print(var2)
+}

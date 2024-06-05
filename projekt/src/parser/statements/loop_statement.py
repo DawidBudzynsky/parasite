@@ -16,4 +16,4 @@ class LoopStatement(Statement):
         return f"(while: {self.expression}, {self.block})"
 
     def accept(self, visitator):
-        return visitator.visit_loop_statement(self)
+        visitator.visit_loop_statement(self)

@@ -17,4 +17,4 @@ class ObjectAccessExpression(OperatorExpression):
         return f"(Object_access: {self.left_expression}.{self.right_expression})"
 
     def accept(self, visitator):
-        return visitator.visit_access_expr(self)
+        visitator.visit_access_expr(self)

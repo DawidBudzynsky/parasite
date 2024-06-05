@@ -18,4 +18,4 @@ class Identifier(Node):
         return f"(identifier: {self.name, self.position})"
 
     def accept(self, visitator):
-        return visitator.visit_identifier(self)
+        visitator.visit_identifier(self)

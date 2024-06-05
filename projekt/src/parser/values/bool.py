@@ -13,4 +13,4 @@ class Bool(Node):
         return f"(BOOL: {self.value}, {self.position})"
 
     def accept(self, visitator):
-        return visitator.visit_bool(self)
+        visitator.visit_bool(self)

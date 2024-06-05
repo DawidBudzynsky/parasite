@@ -17,4 +17,4 @@ class AddExpresion(OperatorExpression):
         return f"({self.left_expression} + {self.right_expression})"
 
     def accept(self, visitator):
-        return visitator.visit_add_expr(self)
+        visitator.visit_add_expr(self)

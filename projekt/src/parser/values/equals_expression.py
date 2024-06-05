@@ -18,4 +18,4 @@ class EqualsExpression(OperatorExpression):
         return f"({self.left_expression} == {self.right_expression})"
 
     def accept(self, visitator):
-        return visitator.visit_equals_expr(self)
+        visitator.visit_equals_expr(self)

@@ -21,4 +21,4 @@ class ForEachStatement(Statement):
         return f"(foreach: {self.identifier}, {self.expression}, {self.block})"
 
     def accept(self, visitator):
-        return visitator.visit_for_each_statement(self)
+        visitator.visit_for_each_statement(self)

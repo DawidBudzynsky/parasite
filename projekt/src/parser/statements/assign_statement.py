@@ -18,4 +18,4 @@ class AssignStatement(Statement):
         return f"(assign: {self.identifier} = {self.expression})"
 
     def accept(self, visitator):
-        return visitator.visit_assign_statement(self)
+        visitator.visit_assign_statement(self)

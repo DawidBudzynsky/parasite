@@ -17,4 +17,4 @@ class SubtractExpression(OperatorExpression):
         return f"({self.left_expression} - {self.right_expression})"
 
     def accept(self, visitator):
-        return visitator.visit_sub_expr(self)
+        visitator.visit_sub_expr(self)
