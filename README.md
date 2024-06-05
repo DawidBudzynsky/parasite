@@ -2,7 +2,9 @@
 
 Projekt języka programowania “Parasite”. Napisany w języku Python.
 
-Język Parasite ma umożliwiać zaimplementowanie paradygmatu programowania aspektowego do języka. Poza charakterystyczną opcją definiowania aspektów do funkcji, język umożliwia inicjalizację i przypisywanie zmiennych, obsługę pętli while oraz instrukcji warunkowych, definiowanie funkcji z argumentami wywołania, funkcje rekurencyjne, operacje arytmetyczne, konkatenacje typów string.
+Język Parasite umożliwia zaimplementowanie paradygmatu programowania aspektowego do języka. Poza charakterystyczną opcją definiowania aspektów do funkcji, język umożliwia inicjalizację i przypisywanie zmiennych, obsługę pętli while oraz instrukcji warunkowych, definiowanie funkcji z argumentami wywołania, funkcje rekurencyjne, operacje arytmetyczne, konwersja typów, konkatenacje typów string.
+
+Implementacja wszystkich elementów projeku napisana w języku Python.
 
 ## Standardowe operacje
 
@@ -13,19 +15,19 @@ Język Parasite ma umożliwiać zaimplementowanie paradygmatu programowania aspe
 - instrukcja pętli (while)
 - definiowanie funkcji
 - wywołania funkcji (zwykłe i rekurencyjne)
-- konwersja typów
+- konwersja typów (operator ->)
 
 ## Charakterystyczne operacje języka
 
 - obsługa aspektów (funkcji, które mają za zadanie wywołać się przed lub po wybranej funkcji)
     - definiowanie aspektów (słowo kluczowe “aspect”)
     - funkcja aspektowa ma składać się z:
-        - “before()” (działanie wykonywane przed funkcją powiązaną z aspektem) i
-        - “after()”(działanie wykonywane po funkcji powiązanej z aspektem)
-        - before lub after są opcjonalne, tzn. można wywołać tylko before lub tylko after albo oba
+        - “before” (działanie wykonywane przed funkcją powiązaną z aspektem) i
+        - “after”(działanie wykonywane po funkcji powiązanej z aspektem)
+        - before lub after są opcjonalne, tzn. można wywołać tylko before lub tylko after albo oba, jednak zawsze w aspekcie musi znaleźć się przynajmniej jedno z nich
 - Przykłady definicji i wywołań poniżej
 
-## Założenia języka
+## Założenia języka (koncepcja)
 
 - statycznie typowany
 - typowanie silne
@@ -39,7 +41,7 @@ Język Parasite ma umożliwiać zaimplementowanie paradygmatu programowania aspe
     - float (float)
     - string (str)
     - boolean (bool)
-- głębokość rekurencji = 500
+- głębokość rekurencji = 200
 - maksymalna długość string = 200
 
 ## Przykłady wykorzystania języka
@@ -141,7 +143,7 @@ triangleArea(a: int, h: int) float {
 
 int a = 3
 int h = 7
-int result = triangleArea(a, h) // result == 10.5
+float result = triangleArea(a, h) // result == 10.5
 ```
 
 ---
@@ -171,8 +173,8 @@ doSomething(){
         print("hello world")
 }
 
-aspect logFunctionCall(doSomething, "doSomething\s*\(\s*[^)]*\)\s*"){
-				int coutner = 0;
+aspect logFunctionCall(doSomething){
+        int coutner = 0;
         before{
 		        for arg in function.args {
 			        print(arg.value)
@@ -185,13 +187,10 @@ aspect logFunctionCall(doSomething, "doSomething\s*\(\s*[^)]*\)\s*"){
             print("starting function " function.name)
         }
         after{
-            print("ending function with type " + function.result.type)
-            print("function called: " + counter + "times")
+            print("ending function with result " + function.result)
+            print("aspect called: " + counter + "times")
         }
 }
-
-logFunctionCall.enabled = true
-
 doSomething()
 
 //output:
@@ -207,7 +206,10 @@ sayHello(x: string) {
 
 aspect prepareSay(sayHello){
 	 before{
-        print("Will call function " + function.name + " with arguments: " + function.args);
+        print("Will call function " + function.name + " with arguments: ");
+        for arg in function.args {
+            print(arg.value)
+        }
     }
 }
 
@@ -246,7 +248,7 @@ statement            = variable_declaration
 
 variable_declaration = type, identifier, "=", expression ;
 
-assign_or_call       = identifier, [ "(", arguments, ")" ], [ "=", expression ] ;
+assign_or_call       = identifier, ( "(", arguments, ")"  |  "=", expression ) ;
 
 if_statement         = "if", expression, block, { "elif", expression, block }, ["else", block] ;
 
@@ -287,9 +289,7 @@ term                 = integer
                      | object_access
                      | "(" , expression , ")" ;
                                           
-object_access        = item, {".", item}
-
-item                 = identifier_or_call
+object_access = identifier_or_call, {".", identifier_or_call}
 
 identifier_or_call   = identifier, ["(", arguments, ")"]
                                           
@@ -297,9 +297,7 @@ aspect_definition    = "aspect", identifier, "(", (identifier | string) {"," (id
 
 aspect_block         = "{", { variable_declaration }, aspect_member "}" ;
 
-aspect_member        = before_statement | after_statement ;
-
-aspect_member        = ( before_statement, [ after_statement ] ) | ( after_statement, [ before_statement ] ) ;
+aspect_members       = ( before_statement, [ after_statement ] ) |  after_statement) ;
 
 before_statement     = "before", block ;
 
@@ -381,8 +379,8 @@ main(){
 }
 ```
 
-```jsx
-Error: Variable 'a' undefined; [2:16]
+
+Error: Couldn't find [a] in scope, declare it first; [2:15]
 ```
 
 ---
@@ -397,7 +395,7 @@ main(){
 ```
 
 ```jsx
-Error: Cannot assign value of type [str] to variable 'a' of type [int]; [3:5]
+Error: Cannot assign to variable of type [int]; [3:2]
 ```
 
 ---
@@ -405,35 +403,16 @@ Error: Cannot assign value of type [str] to variable 'a' of type [int]; [3:5]
 ```jsx
 // przykład próby dodania wartości o różnych typach
 main() {
-  int a = 10 + "5";
+  int a = 10 + "5"
 }
 ```
 
 ```jsx
-Error: Cannot use '+' operator on type [int] and [string]; [2:8]
+Error: Couldn't create [AddExpresion] expression, expression should be of type [int, float]; [2:14]
 ```
 
 ---
 
-```jsx
-// przykład niepoprawnego argumentu podanego do aspektu
-
-doSomething(){
-	print("hi")
-}
-
-aspect logSomething(someFunction){
-	before{
-		print("calling" + function.name)
-	}
-}
-```
-
-```jsx
-Warning: Aspect not attached to any function, that is being called; [5:20]
-```
-
----
 
 ```jsx
 // przykład zdefiniowania aspektu, bez podanych argumentów
@@ -446,7 +425,8 @@ aspect logSomething(){
 ```
 
 ```jsx
-Warning: Aspect not attached to any function, that is being called; [1:21]
+
+Warning: Aspect not attached to any function; [5:21]
 ```
 
 ---
@@ -460,7 +440,7 @@ aspect logSomething(someFunction){
 ```
 
 ```jsx
-Error: Aspect must have at least 'before' or 'after' declaration; [3:1]
+Error: Aspect must have at least 'before' or 'after' declaration; [7:1]
 ```
 
 ```jsx
@@ -476,7 +456,7 @@ main(){
 ```
 
 ```jsx
-Error: 'main' function redefinition; [5:1]
+Error: Function redefinition, function name: [main]; [5:1]
 ```
 
 ---
@@ -486,15 +466,13 @@ Error: 'main' function redefinition; [5:1]
 Uruchomienie programu z pliku (wyjście standardowe)
 
 ```jsx
-parasite main.prst
+python main.py nazwapliku
 Hello world!
 ```
 
 Uruchomienie programu ze strumienia (wyjście standardowe)
-
 ```jsx
-echo 'main(){ print("Hello world!") }' | parasite
-Hello world!
+// jeszcze nie udalo sie zrobić
 ```
 
 ## Tokeny
@@ -572,7 +550,7 @@ wieloargumentowych i funkcji wbudowanych**
 | --- | --- | --- | --- | --- |
 | INTEGER | - | Explicit | Explicit | Explicit |
 | FLOAT | Explicit | - | Explicit | Explicit |
-| STRING | Explicit | Explicit | - | Explicit |
+| STRING | - | - | - | Explicit |
 | BOOLEAN | Explicit | Explicit | Explicit | - |
 
 ```jsx
@@ -594,22 +572,6 @@ W przypadkach konwersji na boolean:
 - int/float 0 oznacza `false`
 - inny int/float oznacza `true`
 
-## Wymagania funkcjonalne
-
-- Obsługa inicjalizacji i przypisania zmiennych
-- Obsługa operacji arytmetycznych
-- Obsługa pętli while
-- Obsługa instrukcji warunkowych (if, else if, else)
-- Obsługa konwersji typów
-- Obsługa wywołań rekurencyjnych funkcji
-- Obsługa aspektów
-
-## Wymagania niefunkcjonalne
-
-- Zapewnienie czytelnej i intuicyjnej składni
-- Czytelna i dokładna komunikacja o błędach
-- Możliwość zdefiniowania programu w pliku lub przez źródło
-- Statyczne, silne typowanie
 
 ## Opis realizacji modułów
 
@@ -633,11 +595,13 @@ Na podstawie podanych tokenów, oczekuje na tokeny określonego typu.
 
 W przypadku natrafienia na nieścisłość, analizator, rzuca wyjątkiem, który zawiera informacje o położeniu niepoprawnego kawałka kodu.
 
-1. Analizator semantyczny
+2. Analizator semantyczny
 
 Analizator semantyczny operuje na drzewie AST zwracanym przez parser. 
 
 Kontroluje “poprawność” (sens) analizowanego kodu.
+
+
 
 Sprawdza: 
 
@@ -651,6 +615,15 @@ W przypadku natrafienia na nieścisłość analizator rzuca wyjątkiem, który z
 
 Interpreter również działa na drzewie AST, działa dopiero gdy analiza semantyczna zakończy się powodzeniem. 
 
-Interpretera nadaje wartości zmiennym oraz wykonuje instrukcje zawarte w zdefiniowanych funkcjach a także funkcje wbudowane.
+Interpreter odwiedza elementy drzewa składniowego, ewaluując ich zawartość. Nadaje wartości zmiennym, sprawdza zgodność typów, zgodność podawanych do wywołań argumentów, uruchamia wywoływane funkcje i aspekty.
 
 Wykonuje operacje arytmetyczne, obsługuje instrukcje warunkowe, pętle, wywołania funkcji oraz inne konstrukcje językowe.
+
+Dba o to aby wywołania rekurencyjnie nie przekroczyly zdefiowanego limitu (implementacja za pomocą CallStack).
+
+## Testy
+
+Testy sprawdzają poprawność działania różnych komponentów systemu, takich jak skaner, analizator leksykalny, parser i interpreter.
+Każdy z modułów zawiera testy jednostkowe oraz bardziej złożone
+
+
