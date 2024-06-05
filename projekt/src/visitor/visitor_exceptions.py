@@ -7,6 +7,7 @@ VARIABLE_REDEFINITION = (
 EXPRESSION_WRONG_TYPE = (
     "Error: Couldn't create [%s] expression, expression should be of type [%s]; [%d:%d]"
 )
+TYPE_MISMATCH = "Error: Couldn't create [%s] expression, type mismatch, values should have the same type; [%d:%d]"
 
 WRONG_RETURN_TYPE = "Error: Wrong return type [%s] should be [%s]; [%d:%d]"
 INVALID_PARAMETERES = (
@@ -23,6 +24,53 @@ ASPECT_BLOCK = (
     "Error: Only variable declarations are available in aspect block; [%d:%d]"
 )
 MISMATCH_TYPE = "Error: Cannot assign to variable of type [%s]; [%d:%d]"
+RECURSION_EXCEPTION = "Error: Recursion depth exceeded; [%d:%d]"
+RETURN_MISSING = "Error: Function potentially does not have return statement, should return [%s]; [%d;%d]"
+NOT_ITERABLE = (
+    "Error: Given variable is not iterable, only 'function.args' in aspect is; [%d;%d]"
+)
+
+CASTING_EXCEPTION = "Error: Couldn't cast [%s] to type [%s]; [%d;%d]"
+
+
+class CastingException(Exception):
+    def __init__(self, value, type, position=(0, 0)):
+        message = CASTING_EXCEPTION % (value, type, position[0], position[1])
+        super().__init__(message)
+        self.message = message
+        self.position = position
+
+
+class NotIterableException(Exception):
+    def __init__(self, position=(0, 0)):
+        message = NOT_ITERABLE % (position[0], position[1])
+        super().__init__(message)
+        self.message = message
+        self.position = position
+
+
+class ReturnMissingException(Exception):
+    def __init__(self, message, position=(0, 0)):
+        message = RETURN_MISSING % (message, position[0], position[1])
+        super().__init__(message)
+        self.message = message
+        self.position = position
+
+
+class RecursionException(Exception):
+    def __init__(self, position=(0, 0)):
+        message = RECURSION_EXCEPTION
+        super().__init__(message)
+        self.message = message
+        self.position = position
+
+
+class MismatchException(Exception):
+    def __init__(self, message, position=(0, 0)):
+        message = TYPE_MISMATCH % (message, position[0], position[1])
+        super().__init__(message)
+        self.message = message
+        self.position = position
 
 
 class NotDeclared(Exception):

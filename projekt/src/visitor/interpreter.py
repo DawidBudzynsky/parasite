@@ -10,11 +10,11 @@ class Interpreter:
         aspects = program.aspects
 
         fun_aspect_dict = {}
-        for aspect_name, aspect in aspects.items():
+        for _, aspect in aspects.items():
             for fun in aspect.aspect_args:
                 if fun_aspect_dict.get(fun.name) is None:
                     fun_aspect_dict[fun.name] = []
-                fun_aspect_dict[fun.name].append(aspect_name)
+                fun_aspect_dict[fun.name].append(aspect)
 
         self.visitor.set_functions(functions)
         self.visitor.set_aspects(aspects)

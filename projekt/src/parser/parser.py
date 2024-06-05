@@ -381,6 +381,7 @@ class Parser:
 
     # casting = term, [ "->", type ] ;
     def parse_casting(self):
+        position = self.token.position
         if (term := self.parse_term()) is None:
             return None
 
@@ -389,7 +390,7 @@ class Parser:
         self.consume_token()
         if (type := self.parse_type_annotation()) is None:
             raise MissingTypeAnnotation(self.token.position)
-        return CastingExpression(term, type)
+        return CastingExpression(term, type, position)
 
     # term = integer | float | bool | string | object_access | "(", expression, ")";
     def parse_term(self):
@@ -543,6 +544,7 @@ class Parser:
         identifier_pos = self.token.position
         identifier = self.__must_be(Type.IDENTIFIER, message=FOR_EACH_IDENTIFIER)
         self.__must_be(Type.IN, message=FOR_EACH_IN_MISSING)
+        position = self.token.position
 
         if (expression := self.parse_expression()) is None:
             raise MissingExpression(
@@ -553,7 +555,7 @@ class Parser:
                 missing_statement="block", position=self.token.position
             )
         return ForEachStatement(
-            Identifier(identifier, identifier_pos), expression, block
+            Identifier(identifier, identifier_pos), expression, block, position
         )
 
     # assign_or_call = identifier, ( "(", arguments, ")"  |  "=", expression ) ;

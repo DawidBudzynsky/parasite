@@ -105,22 +105,26 @@ from visitor.visitor import CodeVisitor
             True,
         ),
         (
-            EqualsExpression(Integer(1, position=(1, 1)), Integer(1, position=(1, 2))),
-            True,
-        ),
-        (
-            EqualsExpression(Integer(1, position=(1, 1)), Float(1, position=(1, 2))),
-            True,
-        ),
-        (
-            NotEqualsExpression(
-                Integer(1, position=(1, 1)), Integer(2, position=(1, 2))
+            EqualsExpression(
+                Integer(1, position=(1, 1)),
+                Integer(1, position=(1, 2)),
+                position=(0, 0),
             ),
             True,
         ),
         (
             NotEqualsExpression(
-                Integer(1, position=(1, 1)), Integer(1, position=(1, 2))
+                Integer(1, position=(1, 1)),
+                Integer(2, position=(1, 2)),
+                position=(0, 0),
+            ),
+            True,
+        ),
+        (
+            NotEqualsExpression(
+                Integer(1, position=(1, 1)),
+                Integer(1, position=(1, 2)),
+                position=(0, 0),
             ),
             False,
         ),
@@ -155,7 +159,7 @@ def test_assign():
 
 def test_return():
     v = CodeVisitor()
-    v.curr_scope = Scope(parent=None, return_type=TypeAnnotation.INT, variables={})
+    v.curr_scope = Scope(parent=None, variables={})
     ReturnStatement(
         expression=AddExpresion(
             Integer(2, position=(1, 1)), Integer(2, position=(1, 2)), position=(0, 0)
@@ -274,7 +278,6 @@ def test_for_each_statement():
     v = CodeVisitor()
     v.curr_scope = Scope(
         parent=None,
-        return_type=TypeAnnotation.STR,
         variables={
             "function": ScopeObject(
                 type=FunctionDef,
@@ -385,7 +388,7 @@ def test_fun_call_with_aspect():
             position=(0, 0),
         ),
     }
-    v.fun_aspect_map = {"fun1": ["asp1"]}
+    v.fun_aspect_map = {"fun1": [v.aspects.get("asp1")]}
 
     FunCallStatement(
         identifier="fun1",
@@ -412,7 +415,6 @@ def test_visit_if_statement():
     v = CodeVisitor()
     v.curr_scope = Scope(
         parent=None,
-        return_type=TypeAnnotation.STR,
         variables={"a": ScopeVariable(value=3, type=TypeAnnotation.INT)},
     )
     IfStatement(
@@ -465,55 +467,57 @@ def test_visit_cast():
     [
         (
             CastingExpression(
-                term=Integer(value=0, position=(0, 0)), type=TypeAnnotation.BOOL
+                term=Integer(value=0, position=(0, 0)),
+                type=TypeAnnotation.BOOL,
+                position=(0, 0),
             ),
             False,
         ),
         (
             CastingExpression(
-                term=Integer(value=0, position=(0, 0)), type=TypeAnnotation.FLOAT
+                term=Integer(value=0, position=(0, 0)),
+                type=TypeAnnotation.FLOAT,
+                position=(0, 0),
             ),
             0.0,
         ),
         (
             CastingExpression(
-                term=Integer(value=0, position=(0, 0)), type=TypeAnnotation.STR
+                term=Integer(value=0, position=(0, 0)),
+                type=TypeAnnotation.STR,
+                position=(0, 0),
             ),
             "0",
         ),
         (
             CastingExpression(
-                term=String(value="12", position=(0, 0)), type=TypeAnnotation.INT
-            ),
-            12,
-        ),
-        (
-            CastingExpression(
-                term=String(value="12", position=(0, 0)), type=TypeAnnotation.FLOAT
-            ),
-            12.0,
-        ),
-        (
-            CastingExpression(
-                term=String(value="12", position=(0, 0)), type=TypeAnnotation.BOOL
+                term=String(value="12", position=(0, 0)),
+                type=TypeAnnotation.BOOL,
+                position=(0, 0),
             ),
             True,
         ),
         (
             CastingExpression(
-                term=Float(value=12.0, position=(0, 0)), type=TypeAnnotation.INT
+                term=Float(value=12.0, position=(0, 0)),
+                type=TypeAnnotation.INT,
+                position=(0, 0),
             ),
             12,
         ),
         (
             CastingExpression(
-                term=Float(value=12.0, position=(0, 0)), type=TypeAnnotation.STR
+                term=Float(value=12.0, position=(0, 0)),
+                type=TypeAnnotation.STR,
+                position=(0, 0),
             ),
             "12.0",
         ),
         (
             CastingExpression(
-                term=Float(value=12.0, position=(0, 0)), type=TypeAnnotation.BOOL
+                term=Float(value=12.0, position=(0, 0)),
+                type=TypeAnnotation.BOOL,
+                position=(0, 0),
             ),
             True,
         ),

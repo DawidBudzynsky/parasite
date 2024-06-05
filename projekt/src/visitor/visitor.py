@@ -44,13 +44,18 @@ from visitor.scope import Scope, ScopeObject, ScopeVariable
 from visitor.stack import Stack
 from visitor.visitor_exceptions import (
     AspectBlockException,
+    CastingException,
     ExprWrongType,
     FunctionNotDeclared,
     InvalidParameters,
+    MismatchException,
     NoAttributeException,
     NotDeclared,
+    NotIterableException,
     ObjectAccessException,
+    RecursionException,
     Redefinition,
+    ReturnMissingException,
     TypeMissmatch,
     WrongReturnType,
 )
@@ -61,9 +66,9 @@ class CodeVisitor(Visitor):
         self.functions = {"print": EmbeddedFunction(name="print", func=print)}
         self.aspects: Dict[str, Aspect] = {}
         self.scope_stack = Stack()
-        self.curr_scope = Scope(parent=None, return_type=None, variables={})
+        self.curr_scope = Scope(parent=None, variables={})
         self.aspects_scope_map = {}
-        self.curr_aspect_stack = None
+        self.curr_aspect_stack = Stack()
         self.fun_aspect_map = {}
         self.returning_flag = False
         self.curr_aspect_fun = {}
@@ -76,6 +81,11 @@ class CodeVisitor(Visitor):
         }
         self.max_depth = 200
         self.call_stack = CallStack()
+
+    def create_new_scope(self):
+        new_scope = Scope(parent=self.curr_scope, variables={})
+        self.scope_stack.push(self.curr_scope)
+        self.curr_scope = new_scope
 
     def set_function_to_aspect_map(self, fun_aspect_map):
         self.fun_aspect_map = fun_aspect_map
@@ -115,6 +125,7 @@ class CodeVisitor(Visitor):
         if element.value is not None:
             element.value.accept(self)
             value = self.last_result
+
         self.put_variable(
             element.name,
             element.position,
@@ -234,7 +245,8 @@ class CodeVisitor(Visitor):
         lex = self.last_result
         element.right_expression.accept(self)
         rex = self.last_result
-        # TODO: sprawdzanie czy odpowiednie typy
+        if type(lex) != type(rex):
+            raise MismatchException(element.__class__.__name__, element.position)
         self.last_result = lex == rex
 
     def visit_not_equals_expr(self, element: NotEqualsExpression):
@@ -242,6 +254,8 @@ class CodeVisitor(Visitor):
         lex = self.last_result
         element.right_expression.accept(self)
         rex = self.last_result
+        if type(lex) != type(rex):
+            raise MismatchException(element.__class__.__name__, element.position)
         self.last_result = lex != rex
 
     def visit_greater_equal_expr(self, element: GreaterEqualExpression):
@@ -303,18 +317,12 @@ class CodeVisitor(Visitor):
         self.set_value(name, element.position, value)
 
     def visit_return_statement(self, element: ReturnStatement):
-        # expression can be None
         if (expression := element.expression) is None:
             self.last_result = None
-        expression.accept(self)
+        else:
+            expression.accept(self)
         value = self.last_result
 
-        # NOTE: position for now
-        position = None
-        if hasattr(expression, "position"):
-            position = expression.position
-
-        self.check_return_type(value, position)
         self.returning_flag = True
         self.last_result = value
 
@@ -323,7 +331,7 @@ class CodeVisitor(Visitor):
             raise FunctionNotDeclared(element.name, element.position)
 
         if self.call_stack.recursion_count(element.name) >= self.max_depth:
-            raise ValueError("recursion depth error")
+            raise RecursionException(position=element.position)
 
         values = []
         for argument in element.arguments:
@@ -331,15 +339,12 @@ class CodeVisitor(Visitor):
             values.append((self.last_result, argument.position))
         self.last_result = values
 
-        self.call_stack.push(element.name)
         fundef.accept(self)
         result = self.last_result
-        self.call_stack.pop(element.name)
 
         self.last_result = result
 
     def visit_function_declaration(self, element: FunctionDef):
-
         if len(element.parameters) != len(self.last_result):
             raise InvalidParameters(
                 len(self.last_result), len(element.parameters), element.position
@@ -347,11 +352,7 @@ class CodeVisitor(Visitor):
 
         values = self.last_result.copy()
 
-        new_scope = Scope(
-            parent=self.curr_scope, return_type=element.type, variables={}
-        )
-        self.scope_stack.push(self.curr_scope)
-        self.curr_scope = new_scope
+        self.create_new_scope()
 
         aspects_list = self.fun_aspect_map.get(element.identifier)
         arguments = []
@@ -374,22 +375,24 @@ class CodeVisitor(Visitor):
 
         if aspects_list:
             self.scope_stack.push(self.curr_scope)
-            for aspect_name in aspects_list:
-                aspect = self.aspects.get(aspect_name)
+            for aspect in aspects_list:
                 aspect.accept(self)
                 if aspect.aspect_block.before_statement is not None:
                     aspect.aspect_block.before_statement.accept(self)
             self.curr_scope = self.scope_stack.pop()
 
         element.block.accept(self)
+        if element.type and not self.returning_flag:
+            raise ReturnMissingException(
+                message=self.type_annotations.get(element.type),
+                position=element.position,
+            )
         result = self.last_result
         self.curr_scope = self.scope_stack.pop()
 
         if aspects_list:
-
             self.scope_stack.push(self.curr_scope)
-            for aspect_name in aspects_list:
-                aspect = self.aspects.get(aspect_name)
+            for aspect in aspects_list:
                 if aspect.aspect_block.after_statement is not None:
                     self.last_result = result
                     aspect.aspect_block.after_statement.accept(self)
@@ -397,8 +400,51 @@ class CodeVisitor(Visitor):
 
         if self.returning_flag:
             self.returning_flag = False
-        # TODO: sprawdzic zwracany typ
+
+        self.check_return_type_fun(result, element.type, element.position)
         self.last_result = result
+
+    def check_return_type_fun(self, value, return_type, position):
+        match return_type:
+            case TypeAnnotation.INT:
+                if isinstance(value, bool):
+                    raise WrongReturnType(
+                        given_value=type(value).__name__,
+                        expected_value=self.type_annotations.get(TypeAnnotation.INT),
+                        position=position,
+                    )
+
+                if not isinstance(value, int):
+                    raise WrongReturnType(
+                        given_value=type(value).__name__,
+                        expected_value=self.type_annotations.get(TypeAnnotation.INT),
+                        position=position,
+                    )
+                return
+            case TypeAnnotation.FLOAT:
+                if not isinstance(value, float):
+                    raise WrongReturnType(
+                        given_value=type(value).__name__,
+                        expected_value=self.type_annotations.get(TypeAnnotation.FLOAT),
+                        position=position,
+                    )
+                return
+            case TypeAnnotation.STR:
+                if not isinstance(value, str):
+                    raise WrongReturnType(
+                        given_value=type(value).__name__,
+                        expected_value=self.type_annotations.get(TypeAnnotation.STR),
+                        position=position,
+                    )
+                return
+            case TypeAnnotation.BOOL:
+                if not isinstance(value, bool):
+                    raise WrongReturnType(
+                        given_value=type(value).__name__,
+                        expected_value=self.type_annotations.get(TypeAnnotation.BOOL),
+                        position=position,
+                    )
+                return
 
     def visit_embedded_function(self, element: EmbeddedFunction):
         for arg in self.last_result:
@@ -412,11 +458,8 @@ class CodeVisitor(Visitor):
                 break
 
     def visit_if_statement(self, element: IfStatement):
-        new_scope = Scope(parent=self.curr_scope, return_type=None, variables={})
-        self.scope_stack.push(self.curr_scope)
-        self.curr_scope = new_scope
+        self.create_new_scope()
 
-        # TODO: new scope w bloku
         executed = False
         for condition_instruction in element.conditions_instructions:
             condition, instruction = condition_instruction
@@ -432,9 +475,7 @@ class CodeVisitor(Visitor):
         self.curr_scope = self.scope_stack.pop()
 
     def visit_loop_statement(self, element: LoopStatement):
-        new_scope = Scope(parent=self.curr_scope, return_type=None, variables={})
-        self.scope_stack.push(self.curr_scope)
-        self.curr_scope = new_scope
+        self.create_new_scope()
 
         element.expression.accept(self)
         while self.last_result:
@@ -446,17 +487,12 @@ class CodeVisitor(Visitor):
         self.curr_scope = self.scope_stack.pop()
 
     def visit_for_each_statement(self, element: ForEachStatement):
-        # TODO: zrob jako funkcje
-        new_scope = Scope(parent=self.curr_scope, return_type=None, variables={})
-        self.scope_stack.push(self.curr_scope)
-        self.curr_scope = new_scope
+        self.create_new_scope()
 
-        # initialize "arg" in scope
-        self.put_variable(
-            v_name=element.identifier.name, position=None, scope_variable=None
-        )
-        element.expression.accept(self)  # visiting object_access
+        element.expression.accept(self)
         arg_list = self.last_result
+        if not isinstance(arg_list, list):
+            raise NotIterableException(element.position)
         for arg in arg_list:
             self.curr_scope.variables[element.identifier.name] = arg
             element.block.accept(self)
@@ -466,7 +502,6 @@ class CodeVisitor(Visitor):
         self.curr_scope = self.scope_stack.pop()
 
     def visit_access_expr(self, element: ObjectAccessExpression):
-        # __import__("pdb").set_trace()
         element.left_expression.accept(self)
         base_object = self.last_result
         if not isinstance(base_object, ScopeObject):
@@ -485,22 +520,30 @@ class CodeVisitor(Visitor):
         value = self.last_result
         match element.type:
             case TypeAnnotation.INT:
-                self.last_result = self.try_cast_to(value, int)
+                self.last_result = self.try_cast_to(value, int, element.position)
             case TypeAnnotation.FLOAT:
-                self.last_result = self.try_cast_to(value, float)
+                self.last_result = self.try_cast_to(value, float, element.position)
             case TypeAnnotation.STR:
-                self.last_result = self.try_cast_to(value, str)
+                self.last_result = self.try_cast_to(value, str, element.position)
             case TypeAnnotation.BOOL:
-                self.last_result = self.try_cast_to(value, bool)
+                self.last_result = self.try_cast_to(value, bool, element.position)
 
     # TODO: try i rzucać wyjątki
-    def try_cast_to(self, value, cast_type):
+    def try_cast_to(self, value, cast_type, position):
         match type(value):
             case builtins.int:
                 return cast_type(value)
             case builtins.float:
                 return cast_type(value)
             case builtins.str:
+                if cast_type == int:
+                    raise CastingException(
+                        value, self.type_annotations.get(TypeAnnotation.INT), position
+                    )
+                if cast_type == float:
+                    raise CastingException(
+                        value, self.type_annotations.get(TypeAnnotation.FLOAT), position
+                    )
                 return cast_type(value)
             case builtins.bool:
                 return cast_type(value)
@@ -516,7 +559,7 @@ class CodeVisitor(Visitor):
     def visit_aspect_statement(self, element: Aspect):
         if (stack := self.aspects_scope_map.get(element.identifier)) is None:
             stack = Stack()
-            stack.push(Scope(parent=None, return_type=None, variables={}))
+            stack.push(Scope(parent=None, variables={}))
             self.aspects_scope_map[element.identifier] = stack
 
         self.curr_aspect_stack = self.aspects_scope_map.get(element.identifier)
@@ -526,7 +569,7 @@ class CodeVisitor(Visitor):
             element.aspect_block.accept(self)
 
     def visit_before_statement(self, element: BeforeStatement):
-        new_aspect_scope = Scope(parent=self.curr_scope, return_type=None, variables={})
+        new_aspect_scope = Scope(parent=self.curr_scope, variables={})
         self.curr_scope = new_aspect_scope
         element.block.accept(self)
         self.curr_scope = self.curr_aspect_stack.peek()
@@ -534,7 +577,7 @@ class CodeVisitor(Visitor):
     def visit_after_statement(self, element: AfterStatement):
         self.curr_scope = self.curr_aspect_stack.peek()
         self.curr_scope.variables["function"].result = self.last_result
-        new_aspect_scope = Scope(parent=self.curr_scope, return_type=None, variables={})
+        new_aspect_scope = Scope(parent=self.curr_scope, variables={})
         self.curr_scope = new_aspect_scope
         element.block.accept(self)
         self.curr_scope = self.curr_aspect_stack.peek()
@@ -631,8 +674,7 @@ class CodeVisitor(Visitor):
     def put_variable(self, v_name, position, scope_variable):
         if self.curr_scope.in_current_scope(v_name):
             raise Redefinition(v_name, position)
-        if scope_variable is not None:
-            self.check_value_type(scope_variable.type, scope_variable.value, position)
+        self.check_value_type(scope_variable.type, scope_variable.value, position)
         self.curr_scope.variables[v_name] = scope_variable
 
     def set_value(self, v_name, position, value):
@@ -640,6 +682,3 @@ class CodeVisitor(Visitor):
             raise NotDeclared(v_name, position)
         new_value = self.check_value_type(variable.type, value, position)
         variable.value = new_value
-
-
-# TODO: przerzucic tworzenie scope do bloku

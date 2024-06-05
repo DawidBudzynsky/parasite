@@ -46,16 +46,15 @@ class ScopeObject:
 
 
 class Scope:
-    def __init__(self, parent=None, return_type=None, variables={}):
+    def __init__(self, parent=None, variables={}):
         self.parent = parent
-        self.return_type = return_type
         self.variables = variables
 
     def __eq__(self, other):
         return isinstance(other, Scope) and self.variables == other.variables
 
     def __repr__(self):
-        return f"Scope:{self.parent}, {self.return_type},{self.variables}"
+        return f"Scope:{self.parent}, {self.variables}"
 
     def in_scope(self, name):
         if name not in self.variables:
