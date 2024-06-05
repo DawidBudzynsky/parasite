@@ -1,16 +1,7 @@
-returnNone() {
-    int i = 1
-    float a = 1.0
-    for i in a{
-        print("xp")
-    }
+main(){
+	print("hi")
 }
 
 main(){
-    str a = "a"
-    bool i = a->bool
-    float j = a->float
-    int k = a->int
-    str l = a->str
-    print(i)
+	print("hello")
 }
