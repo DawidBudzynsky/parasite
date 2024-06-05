@@ -3,9 +3,10 @@ from parser.expression import Expression
 
 # TODO: position
 class CastingExpression(Expression):
-    def __init__(self, term, type=None):
+    def __init__(self, term, type=None, position=None):
         self.term = term
         self.type = type
+        self.position = position
 
     def __eq__(self, other):
         return (

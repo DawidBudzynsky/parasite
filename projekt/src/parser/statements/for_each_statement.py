@@ -3,10 +3,11 @@ from parser.statement import Statement
 
 # TODO: position
 class ForEachStatement(Statement):
-    def __init__(self, identifier, expression, block=[]):
+    def __init__(self, identifier, expression, block=[], position=None):
         self.identifier = identifier
         self.expression = expression
         self.block = block
+        self.position = position
 
     def __eq__(self, other):
         if not isinstance(other, ForEachStatement):

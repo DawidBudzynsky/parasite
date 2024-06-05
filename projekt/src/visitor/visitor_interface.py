@@ -35,7 +35,6 @@ from parser.values.or_expression import OrExpression
 from parser.values.plus_expression import AddExpresion
 from parser.values.string import String
 from parser.variable import Variable
-from visitor.embedded_fun import EmbeddedFunction
 
 
 class Visitor(ABC):
@@ -133,11 +132,6 @@ class Visitor(ABC):
 
     @abstractmethod
     def visit_function_declaration(self, element: FunctionDef) -> None:
-        pass
-
-    # NOTE: not sure about that
-    @abstractmethod
-    def visit_embedded_function(self, element: EmbeddedFunction) -> None:
         pass
 
     @abstractmethod

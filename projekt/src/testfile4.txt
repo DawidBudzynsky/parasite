@@ -12,11 +12,11 @@ aspect asp1(fun1){
 }
 
 aspect asp2(fun1){
-    before{
-        print("asp2 called")
-    }
     after{
         print("asp2 ended, res: " + function.result->str)
+    }
+    before{
+        print("asp2 called")
     }
 }
 
