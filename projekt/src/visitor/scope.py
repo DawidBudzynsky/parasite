@@ -8,6 +8,7 @@ from visitor.visitor_exceptions import NotDeclared
 from visitor.visitor_exceptions import Redefinition
 
 
+# TODO: interfejs
 class ScopeVariable:
     def __init__(self, value, type):
         self.value = value

@@ -15,4 +15,4 @@ class AfterStatement(Statement):
         return f"(after: {self.block})"
 
     def accept(self, visitator):
-        return visitator.visit_after_statement(self)
+        visitator.visit_after_statement(self)

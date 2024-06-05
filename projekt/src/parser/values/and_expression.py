@@ -18,4 +18,4 @@ class AndExpression(OperatorExpression, Node):
         )
 
     def accept(self, visitator):
-        return visitator.visit_and_expression(self)
+        visitator.visit_and_expression(self)

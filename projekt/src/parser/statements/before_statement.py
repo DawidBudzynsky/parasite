@@ -15,4 +15,4 @@ class BeforeStatement(Statement):
         return f"(before: {self.block})"
 
     def accept(self, visitator):
-        return visitator.visit_before_statement(self)
+        visitator.visit_before_statement(self)

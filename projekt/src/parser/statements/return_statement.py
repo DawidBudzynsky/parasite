@@ -15,4 +15,4 @@ class ReturnStatement(Statement):
         return f"(return: {self.expression})"
 
     def accept(self, visitator):
-        return visitator.visit_return_statement(self)
+        visitator.visit_return_statement(self)

@@ -16,4 +16,4 @@ class Program(Statement):
         return f"(PROGRAM: functions: {self.functions}, aspects: {self.aspects})"
 
     def accept(self, visitator):
-        return visitator.visit_program(self)
+        visitator.visit_program(self)

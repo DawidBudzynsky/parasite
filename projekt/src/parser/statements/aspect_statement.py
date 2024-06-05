@@ -21,4 +21,4 @@ class Aspect(Statement):
         return f"(aspect: {self.identifier}, {self.aspect_args}, {self.aspect_block})"
 
     def accept(self, visitator):
-        return visitator.visit_aspect_statement(self)
+        visitator.visit_aspect_statement(self)

@@ -18,4 +18,4 @@ class GreaterEqualExpression(OperatorExpression):
         return f"({self.left_expression} >= {self.right_expression})"
 
     def accept(self, visitator):
-        return visitator.visit_greater_equal_expr(self)
+        visitator.visit_greater_equal_expr(self)

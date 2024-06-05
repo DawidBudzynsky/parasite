@@ -16,4 +16,4 @@ class FunCallStatement(Statement):
         return f"(funcall: {self.name}({self.arguments}))"
 
     def accept(self, visitator):
-        return visitator.visit_fun_call_statement(self)
+        visitator.visit_fun_call_statement(self)

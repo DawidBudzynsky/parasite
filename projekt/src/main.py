@@ -2,7 +2,7 @@ from lexer.lexer import Lexer
 from lexer.reader import Source
 from parser.parser import Parser
 from visitor.interpreter import Interpreter
-from visitor.visitor import ParserVisitor
+from visitor.visitor import CodeVisitor
 import argparse
 
 
@@ -12,7 +12,7 @@ def main(file_name):
             source = Source(sourcefile)
             lexer = Lexer(source)
             parser = Parser(lexer)
-            visitor = ParserVisitor()
+            visitor = CodeVisitor()
             interpreter = Interpreter(parser, visitor)
             interpreter.run()
     except FileNotFoundError:

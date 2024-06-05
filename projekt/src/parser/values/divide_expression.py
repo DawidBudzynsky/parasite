@@ -10,4 +10,4 @@ class DivideExpression(OperatorExpression):
         return f"({self.left_expression} / {self.right_expression})"
 
     def accept(self, visitator):
-        return visitator.visit_divide_expression(self)
+        visitator.visit_divide_expression(self)

@@ -19,4 +19,4 @@ class IfStatement(Statement):
         return f"(if_conditions: {self.conditions_instructions}, else:{self.else_instructions})"
 
     def accept(self, visitator):
-        return visitator.visit_if_statement(self)
+        visitator.visit_if_statement(self)

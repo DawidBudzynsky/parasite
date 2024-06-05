@@ -15,4 +15,4 @@ class Block(Statement):
         return f"(BLOCK:{self.statements})"
 
     def accept(self, visitator):
-        return visitator.visit_block(self)
+        visitator.visit_block(self)

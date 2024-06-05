@@ -32,7 +32,7 @@ from parser.values.string import String
 from parser.variable import Variable
 from parser.values.casting_expression import CastingExpression
 from visitor.scope import Scope, ScopeObject, ScopeVariable
-from visitor.visitor import ParserVisitor
+from visitor.visitor import CodeVisitor
 
 
 @pytest.mark.parametrize(
@@ -108,7 +108,6 @@ from visitor.visitor import ParserVisitor
             EqualsExpression(Integer(1, position=(1, 1)), Integer(1, position=(1, 2))),
             True,
         ),
-        # NOTE: works with integer == float now
         (
             EqualsExpression(Integer(1, position=(1, 1)), Float(1, position=(1, 2))),
             True,
@@ -128,13 +127,14 @@ from visitor.visitor import ParserVisitor
     ],
 )
 def test_add_expression(input_expression, expected):
-    v = ParserVisitor()
-    result = input_expression.accept(v)
+    v = CodeVisitor()
+    input_expression.accept(v)
+    result = v.last_result
     assert result == expected
 
 
 def test_assign():
-    v = ParserVisitor()
+    v = CodeVisitor()
     Variable(
         name="a",
         value=Integer(1, position=(0, 0)),
@@ -154,19 +154,20 @@ def test_assign():
 
 
 def test_return():
-    v = ParserVisitor()
+    v = CodeVisitor()
     v.curr_scope = Scope(parent=None, return_type=TypeAnnotation.INT, variables={})
-    result = ReturnStatement(
+    ReturnStatement(
         expression=AddExpresion(
             Integer(2, position=(1, 1)), Integer(2, position=(1, 2)), position=(0, 0)
         )
     ).accept(v)
+    result = v.last_result
     assert result == 4
     assert v.returning_flag
 
 
 def test_visit_fun_call():
-    v = ParserVisitor()
+    v = CodeVisitor()
     v.functions = {
         "add": FunctionDef(
             identifier="add",
@@ -193,16 +194,17 @@ def test_visit_fun_call():
             position=(0, 0),
         )
     }
-    result = FunCallStatement(
+    FunCallStatement(
         identifier="add",
         arguments=[Integer(1, position=(0, 0)), Integer(2, position=(0, 0))],
         position=(0, 0),
     ).accept(v)
+    result = v.last_result
     assert result == 3
 
 
 def test_visit_while():
-    v = ParserVisitor()
+    v = CodeVisitor()
     Block(
         statements=[
             Variable(
@@ -234,28 +236,30 @@ def test_visit_while():
 
 
 def test_object_access():
-    v = ParserVisitor()
+    v = CodeVisitor()
     v.curr_scope.variables = {
         "function": ScopeObject(name="test_fun", value=None, type=None, args=None)
     }
-    result = ObjectAccessExpression(
+    ObjectAccessExpression(
         left_expression=Identifier("function", position=(0, 0)),
         right_expression=Identifier("name", position=(0, 0)),
     ).accept(v)
+    result = v.last_result
     assert result == "test_fun"
 
 
 def test_object_access_v2():
-    v = ParserVisitor()
+    v = CodeVisitor()
     v.curr_scope.variables = {
         "arg": ScopeObject(
             type=TypeAnnotation.STR, name="arg", value="hello", args=None
         ),
     }
-    result = ObjectAccessExpression(
+    ObjectAccessExpression(
         left_expression=Identifier("arg", position=(0, 0)),
         right_expression=Identifier("type", position=(0, 0)),
     ).accept(v)
+    result = v.last_result
     assert result == TypeAnnotation.STR
 
 
@@ -267,7 +271,7 @@ def test_object_access_v2():
 
 
 def test_for_each_statement():
-    v = ParserVisitor()
+    v = CodeVisitor()
     v.curr_scope = Scope(
         parent=None,
         return_type=TypeAnnotation.STR,
@@ -283,7 +287,7 @@ def test_for_each_statement():
             )
         },
     )
-    result = ForEachStatement(
+    ForEachStatement(
         identifier=Identifier("arg", position=(0, 0)),
         expression=ObjectAccessExpression(
             left_expression=Identifier(name="function", position=(0, 0)),
@@ -320,6 +324,7 @@ def test_for_each_statement():
             ]
         ),
     ).accept(v)
+    result = v.last_result
     assert result == "arg is 2"
 
 
@@ -335,7 +340,7 @@ def test_for_each_statement():
 
 
 def test_fun_call_with_aspect():
-    v = ParserVisitor()
+    v = CodeVisitor()
     v.aspects = {
         "asp1": Aspect(
             identifier="asp1",
@@ -404,13 +409,13 @@ def test_fun_call_with_aspect():
 
 
 def test_visit_if_statement():
-    v = ParserVisitor()
+    v = CodeVisitor()
     v.curr_scope = Scope(
         parent=None,
         return_type=TypeAnnotation.STR,
         variables={"a": ScopeVariable(value=3, type=TypeAnnotation.INT)},
     )
-    result = IfStatement(
+    IfStatement(
         conditions_instructions=[
             (
                 GreaterExpression(
@@ -427,11 +432,12 @@ def test_visit_if_statement():
         ),
         position=(0, 0),
     ).accept(v)
+    result = v.last_result
     assert result == "a>2"
 
 
 def test_print_func():
-    v = ParserVisitor()
+    v = CodeVisitor()
     import io
     import sys
 
@@ -446,10 +452,11 @@ def test_print_func():
 
 
 def test_visit_cast():
-    v = ParserVisitor()
-    result = CastingExpression(
+    v = CodeVisitor()
+    CastingExpression(
         term=Integer(value="0", position=(0, 0)), type=TypeAnnotation.BOOL
     ).accept(v)
+    result = v.last_result
     assert result is False
 
 
@@ -513,6 +520,7 @@ def test_visit_cast():
     ],
 )
 def test_visit_cast_table_test(input_expression, expected):
-    v = ParserVisitor()
-    result = input_expression.accept(v)
+    v = CodeVisitor()
+    input_expression.accept(v)
+    result = v.last_result
     assert result == expected

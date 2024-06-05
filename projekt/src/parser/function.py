@@ -9,9 +9,6 @@ class FunctionDef(Node):
         self.type = type
         self.block = block
 
-    def accept(self, visitator):
-        return visitator.visit_function_declaration(self)
-
     def __eq__(self, other):
         return (
             isinstance(other, FunctionDef)
@@ -23,3 +20,6 @@ class FunctionDef(Node):
 
     def __repr__(self) -> str:
         return f"(funcDef: {self.identifier}, {self.parameters}, {self.type}, {self.block})"
+
+    def accept(self, visitator):
+        visitator.visit_function_declaration(self)
