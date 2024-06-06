@@ -1,0 +1,14 @@
+change(x: int ){
+    x = x + 1000
+    return x
+}
+
+main(){
+    int var = 2
+    change(var)
+    print(var)
+}
+
+// should return:
+// 
+// 2

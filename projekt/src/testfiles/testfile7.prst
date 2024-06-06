@@ -1,0 +1,32 @@
+// testfile with a usage of regexes as aspect argument
+
+sum(a: int, b: int)int {
+    return a + b
+}
+
+sum2(a: int, b: int)int {
+    return a + b
+}
+
+sum3(a: int, b: int)int {
+    return a + b
+}
+
+sum33(a: int, b: int)int {
+    return a + b
+}
+
+aspect sumasp("^sum\\d$"){
+        before{
+            print("aa")
+        }
+    }
+
+main(){
+    sum(1,2)
+    sum2(2,2)
+    sum3(2,2)
+    sum33(2,2)
+}
+
+// should only apply to sum2 and sum3

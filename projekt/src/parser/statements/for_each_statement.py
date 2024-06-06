@@ -1,7 +1,6 @@
 from parser.statement import Statement
 
 
-# TODO: position
 class ForEachStatement(Statement):
     def __init__(self, identifier, expression, block=[], position=None):
         self.identifier = identifier

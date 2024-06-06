@@ -1,7 +1,6 @@
 from parser.expression import Expression
 
 
-# TODO: position
 class CastingExpression(Expression):
     def __init__(self, term, type=None, position=None):
         self.term = term

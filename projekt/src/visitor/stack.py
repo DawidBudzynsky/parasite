@@ -29,3 +29,6 @@ class Stack:
 
     def __repr__(self):
         return str(self.items)
+
+    def __eq__(self, other):
+        return isinstance(other, Stack) and self.items == other.items

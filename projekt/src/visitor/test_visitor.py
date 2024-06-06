@@ -31,6 +31,14 @@ from parser.values.plus_expression import AddExpresion
 from parser.values.string import String
 from parser.variable import Variable
 from parser.values.casting_expression import CastingExpression
+from visitor.stack import Stack
+from visitor.visitor_exceptions import (
+    AspectBlockException,
+    CastingException,
+    NoAttributeException,
+    NotDeclared,
+    ObjectAccessException,
+)
 from visitor.scope import Scope, ScopeObject, ScopeVariable
 from visitor.visitor import CodeVisitor
 
@@ -252,6 +260,67 @@ def test_object_access():
     assert result == "test_fun"
 
 
+# Test visit_access_expr raises ObjectAccessException exception
+# arg.non_existant_attribute
+def test_visit_access_expr_throws_exception():
+    v = CodeVisitor()
+    v.curr_scope.variables = {
+        "arg": ScopeObject(
+            type=TypeAnnotation.STR, name="arg", value="hello", args=None
+        ),
+    }
+    with pytest.raises(NoAttributeException) as exception:
+        ObjectAccessExpression(
+            left_expression=Identifier("arg", position=(0, 0)),
+            right_expression=Identifier("non_existant_attribute", position=(0, 0)),
+            position=(0, 0),
+        ).accept(v)
+
+    expected = NoAttributeException(
+        base_obj="arg", attr="non_existant_attribute", position=(0, 0)
+    )
+
+    assert isinstance(exception.value, type(expected))
+    assert str(exception.value) == str(expected)
+
+
+# Test visit_access_expr raises ObjectAccessException exception
+# arg.value
+def test_visit_access_expr_throws_obj_exception():
+    v = CodeVisitor()
+    v.curr_scope.variables = {
+        "arg": ScopeVariable(type=TypeAnnotation.STR, value="hello"),
+    }
+    with pytest.raises(ObjectAccessException) as exception:
+        ObjectAccessExpression(
+            left_expression=Identifier("arg", position=(0, 0)),
+            right_expression=Identifier("value", position=(0, 0)),
+            position=(0, 0),
+        ).accept(v)
+    expected = ObjectAccessException(message="arg", position=(0, 0))
+    assert isinstance(exception.value, type(expected))
+    assert str(exception.value) == str(expected)
+
+
+# Test visit_access_expr raises ObjectAccessException exception
+# arg.value, here value is just a string, not an Identifier
+# should raise ObjectAccessException
+def test_visit_access_expr_throws_obj_exception_identifier():
+    v = CodeVisitor()
+    v.curr_scope.variables = {
+        "arg": ScopeVariable(type=TypeAnnotation.STR, value="hello"),
+    }
+    with pytest.raises(ObjectAccessException) as exception:
+        ObjectAccessExpression(
+            left_expression=Identifier("arg", position=(0, 0)),
+            right_expression=String(value="value", position=(0, 0)),
+            position=(0, 0),
+        ).accept(v)
+    expected = ObjectAccessException(message="arg", position=(0, 0))
+    assert isinstance(exception.value, type(expected))
+    assert str(exception.value) == str(expected)
+
+
 def test_object_access_v2():
     v = CodeVisitor()
     v.curr_scope.variables = {
@@ -272,8 +341,6 @@ def test_object_access_v2():
 #         return "arg is 2"
 #     }
 # }
-
-
 def test_for_each_statement():
     v = CodeVisitor()
     v.curr_scope = Scope(
@@ -340,8 +407,6 @@ def test_for_each_statement():
 #       int var = 0
 #   }
 # }
-
-
 def test_fun_call_with_aspect():
     v = CodeVisitor()
     v.aspects = {
@@ -402,6 +467,7 @@ def test_fun_call_with_aspect():
     assert result == "fun1"
 
 
+# Test if statement
 # fun1(a: int) str {
 #     if a > 2 {
 #         return "a>2"
@@ -409,8 +475,6 @@ def test_fun_call_with_aspect():
 #         return "a<2"
 #     }
 # }
-
-
 def test_visit_if_statement():
     v = CodeVisitor()
     v.curr_scope = Scope(
@@ -528,3 +592,197 @@ def test_visit_cast_table_test(input_expression, expected):
     input_expression.accept(v)
     result = v.last_result
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    "input_expression, expected",
+    [
+        (
+            CastingExpression(
+                term=String(value="string", position=(0, 0)),
+                type=TypeAnnotation.INT,
+                position=(0, 0),
+            ),
+            CastingException(value="string", type="int", position=(0, 0)),
+        ),
+        (
+            CastingExpression(
+                term=String(value="string", position=(0, 0)),
+                type=TypeAnnotation.FLOAT,
+                position=(0, 0),
+            ),
+            CastingException(value="string", type="float", position=(0, 0)),
+        ),
+    ],
+)
+def test_visit_cast_throws_excpetion(input_expression, expected):
+    v = CodeVisitor()
+    with pytest.raises(Exception) as e_info:
+        input_expression.accept(v)
+    assert isinstance(e_info.value, type(expected))
+    assert str(e_info.value) == str(expected)
+
+
+# Test if the error that 'e' is not declared is thrown
+# sum(a: int, b: int) int {
+#   return e
+# }
+# main(){
+#   int e = 20
+#   sum(2,2)
+# }
+def test_variable_not_declared_error():
+    v = CodeVisitor()
+    v.curr_scope = Scope(
+        parent=None,
+        variables={"a": ScopeVariable(value=3, type=TypeAnnotation.INT)},
+    )
+    v.functions = {
+        "sum": FunctionDef(
+            identifier="sum",
+            type=TypeAnnotation.INT,
+            parameters=[
+                Variable(name="a", type=TypeAnnotation.INT),
+                Variable(name="b", type=TypeAnnotation.INT),
+            ],
+            position=(0, 0),
+            block=Block(statements=[ReturnStatement(Identifier("e", position=(0, 0)))]),
+        ),
+        "main": FunctionDef(
+            identifier="main",
+            type=TypeAnnotation.INT,
+            parameters=[],
+            position=(0, 0),
+            block=Block(
+                statements=[
+                    AssignStatement(
+                        identifier=Identifier("e", position=(0, 0)),
+                        expression=Integer(value=20, position=(0, 0)),
+                        position=(0, 0),
+                    ),
+                    FunCallStatement(
+                        identifier="sum",
+                        arguments=[
+                            Integer(value=2, position=(0, 0)),
+                            Integer(value=2, position=(0, 0)),
+                        ],
+                        position=(0, 0),
+                    ),
+                ]
+            ),
+        ),
+    }
+    with pytest.raises(Exception) as e_info:
+        FunCallStatement(
+            identifier="main",
+            arguments=[],
+            position=(0, 0),
+        ).accept(v)
+
+    expected = NotDeclared(message="e", position=(0, 0))
+    assert isinstance(e_info.value, type(expected))
+    assert str(e_info.value) == str(expected)
+
+
+# Test visit_aspect_block, only variable declarations are avaliable in aspect_block
+# {
+#   int e = 20
+#   str a = "test"
+# }
+def test_visit_aspect_block():
+    v = CodeVisitor()
+    v.curr_scope = Scope(
+        parent=None,
+        variables={},
+    )
+    AspectBlock(
+        variables=[
+            Variable(
+                name="e",
+                type=TypeAnnotation.INT,
+                value=Integer(value=20, position=(0, 0)),
+                position=(0, 0),
+            ),
+            Variable(
+                name="a",
+                type=TypeAnnotation.STR,
+                value=String(value="test", position=(0, 0)),
+                position=(0, 0),
+            ),
+        ]
+    ).accept(v)
+    assert v.curr_scope.variables == {
+        "e": ScopeVariable(value=20, type=TypeAnnotation.INT),
+        "a": ScopeVariable(value="test", type=TypeAnnotation.STR),
+    }
+
+
+# Test visit_aspect_block, now we add different statement than variable declaration, it should raise AspectBlockException
+# {
+#   int e = 20
+#   e = 30
+# }
+def test_visit_aspect_block_raises_exception():
+    v = CodeVisitor()
+    v.curr_scope = Scope(
+        parent=None,
+        variables={},
+    )
+    with pytest.raises(Exception) as e_info:
+        AspectBlock(
+            variables=[
+                Variable(
+                    name="e",
+                    type=TypeAnnotation.INT,
+                    value=Integer(value=20, position=(0, 0)),
+                    position=(0, 0),
+                ),
+                AssignStatement(
+                    identifier=Identifier("e", position=(0, 0)),
+                    expression=Integer(value=30, position=(0, 0)),
+                    position=(0, 0),
+                ),
+            ]
+        ).accept(v)
+    expected = AspectBlockException()
+    assert isinstance(e_info.value, type(expected))
+    assert str(e_info.value) == str(expected)
+
+
+# Test visit_aspect_statement, it should create new Stack in aspects_scope_map and add new scope to that stack with variable "function"
+def test_visit_aspect_statement():
+    v = CodeVisitor()
+    v.curr_scope = Scope(
+        parent=None,
+        variables={},
+    )
+    v.aspects_scope_map = {}
+    Aspect(
+        identifier="aspect_func",
+        aspect_args=[
+            Identifier("func1", (1, 20)),
+            Identifier("func2", (1, 27)),
+        ],
+        aspect_block=AspectBlock(
+            [
+                Variable(
+                    "var1",
+                    TypeAnnotation.INT,
+                    value=Integer(12, (2, 12)),
+                    position=(2, 1),
+                )
+            ]
+        ),
+        position=(1, 1),
+    ).accept(v)
+    expected_stack = Stack()
+    expected_stack.push(
+        Scope(
+            parent=None,
+            variables={
+                "function": {},
+                "var1": ScopeVariable(value=12, type=TypeAnnotation.INT),
+            },
+        )
+    )
+    assert v.aspects_scope_map == {"aspect_func": expected_stack}

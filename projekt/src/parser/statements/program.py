@@ -1,7 +1,6 @@
 from parser.statement import Statement
 
 
-# TODO: position
 class Program(Statement):
     def __init__(self, functions, aspects):
         self.functions = functions

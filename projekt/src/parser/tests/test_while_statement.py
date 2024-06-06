@@ -1,4 +1,3 @@
-from typing_extensions import ParamSpec
 import pytest
 from parser.statements.assign_statement import AssignStatement
 from parser.statements.block import Block

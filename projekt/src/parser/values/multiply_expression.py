@@ -1,7 +1,6 @@
 from parser.values.operator_expression import OperatorExpression
 
 
-# TODO: position
 class MultiplyExpression(OperatorExpression):
     def __init__(self, left_expression, right_expression, position):
         super().__init__(left_expression, right_expression, position)

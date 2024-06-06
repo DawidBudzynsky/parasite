@@ -82,8 +82,8 @@ class CodeVisitor(Visitor):
         self.max_depth = 200
         self.call_stack = CallStack()
 
-    def create_new_scope(self):
-        new_scope = Scope(parent=self.curr_scope, variables={})
+    def create_new_scope(self, parent):
+        new_scope = Scope(parent=parent, variables={})
         self.scope_stack.push(self.curr_scope)
         self.curr_scope = new_scope
 
@@ -352,7 +352,7 @@ class CodeVisitor(Visitor):
 
         values = self.last_result.copy()
 
-        self.create_new_scope()
+        self.create_new_scope(parent=None)
 
         aspects_list = self.fun_aspect_map.get(element.identifier)
         arguments = []
@@ -390,6 +390,9 @@ class CodeVisitor(Visitor):
         result = self.last_result
         self.curr_scope = self.scope_stack.pop()
 
+        if self.returning_flag:
+            self.returning_flag = False
+
         if aspects_list:
             self.scope_stack.push(self.curr_scope)
             for aspect in aspects_list:
@@ -397,9 +400,6 @@ class CodeVisitor(Visitor):
                     self.last_result = result
                     aspect.aspect_block.after_statement.accept(self)
             self.curr_scope = self.scope_stack.pop()
-
-        if self.returning_flag:
-            self.returning_flag = False
 
         self.check_return_type_fun(result, element.type, element.position)
         self.last_result = result
@@ -458,7 +458,7 @@ class CodeVisitor(Visitor):
                 break
 
     def visit_if_statement(self, element: IfStatement):
-        self.create_new_scope()
+        self.create_new_scope(parent=self.curr_scope)
 
         executed = False
         for condition_instruction in element.conditions_instructions:
@@ -475,7 +475,7 @@ class CodeVisitor(Visitor):
         self.curr_scope = self.scope_stack.pop()
 
     def visit_loop_statement(self, element: LoopStatement):
-        self.create_new_scope()
+        self.create_new_scope(parent=self.curr_scope)
 
         element.expression.accept(self)
         while self.last_result:
@@ -487,7 +487,7 @@ class CodeVisitor(Visitor):
         self.curr_scope = self.scope_stack.pop()
 
     def visit_for_each_statement(self, element: ForEachStatement):
-        self.create_new_scope()
+        self.create_new_scope(parent=self.curr_scope)
 
         element.expression.accept(self)
         arg_list = self.last_result
@@ -505,13 +505,19 @@ class CodeVisitor(Visitor):
         element.left_expression.accept(self)
         base_object = self.last_result
         if not isinstance(base_object, ScopeObject):
-            raise ObjectAccessException(element.left_expression.name)
+            raise ObjectAccessException(
+                element.left_expression.name, position=element.position
+            )
         if not isinstance(element.right_expression, Identifier):
-            raise ObjectAccessException(element.right_expression.name)
+            raise ObjectAccessException(
+                element.right_expression.name, position=element.position
+            )
 
         attribute_name = element.right_expression.name
         if not hasattr(base_object, attribute_name):
-            raise NoAttributeException(base_object.name, attribute_name)
+            raise NoAttributeException(
+                base_object.name, attribute_name, position=element.position
+            )
         attribute = getattr(base_object, attribute_name)
         self.last_result = attribute
 
@@ -528,7 +534,6 @@ class CodeVisitor(Visitor):
             case TypeAnnotation.BOOL:
                 self.last_result = self.try_cast_to(value, bool, element.position)
 
-    # TODO: try i rzucać wyjątki
     def try_cast_to(self, value, cast_type, position):
         match type(value):
             case builtins.int:

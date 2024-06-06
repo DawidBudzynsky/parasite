@@ -1,3 +1,4 @@
+// Or statement
 sayHello(x: str) {
 	print("hello " + x)
 }
@@ -11,3 +12,7 @@ main(){
         sayHello("alice")
     }
 }
+
+// should return:
+// 
+// hello alice
