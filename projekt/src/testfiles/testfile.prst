@@ -1,3 +1,5 @@
+// Simple function with aspect attached to it
+
 doSomething(){
         print("hello world")
 }
@@ -17,7 +19,7 @@ aspect logFunctionCall(doSomething){
         }
         after{
             counter = counter + 1
-            print("function called: " + counter->str + " times")
+            print("aspect called: " + counter->str + " times")
         }
 }
 
@@ -26,3 +28,16 @@ main(){
     doSomething()
     doSomething()
 }
+
+
+//should return:
+//
+//starting function: doSomething
+//hello world
+//aspect called: 1 times
+//starting function: doSomething
+//hello world
+//aspect called: 2 times
+//starting function: doSomething
+//hello world
+//aspect called: 3 times

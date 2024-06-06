@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-
 from parser.function import FunctionDef
 from parser.statements.after_statement import AfterStatement
 from parser.statements.aspect_block_statement import AspectBlock

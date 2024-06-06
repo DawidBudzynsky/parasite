@@ -1,5 +1,4 @@
 import pytest
-from lexer.tokens import Type
 from parser.exceptions import (
     MISSING_IDENTIFIER_AFTER_COMMA,
     InvalidSyntaxVerbose,

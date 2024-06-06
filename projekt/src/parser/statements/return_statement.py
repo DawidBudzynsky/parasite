@@ -1,7 +1,6 @@
 from parser.statement import Statement
 
 
-# TODO: position
 class ReturnStatement(Statement):
     def __init__(self, expression):
         self.expression = expression

@@ -1,3 +1,5 @@
+//Function with recursion
+
 fibonacci(n: int) int {
 	if n <= 1 {
 		return n
@@ -7,7 +9,10 @@ fibonacci(n: int) int {
 }
 
 main(){
-    int result = fibonacci(35)
+    int result = fibonacci(15)
     print(result)
 }
 
+
+// should return:
+// 610

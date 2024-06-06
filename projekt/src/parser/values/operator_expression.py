@@ -1,7 +1,6 @@
 from parser.expression import Expression
 
 
-# TODO: position
 class OperatorExpression(Expression):
     def __init__(self, left_expression, right_expression, position):
         self.left_expression = left_expression

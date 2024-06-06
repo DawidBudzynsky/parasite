@@ -2,7 +2,6 @@ from parser.node import Node
 from parser.values.operator_expression import OperatorExpression
 
 
-# TODO: position
 class AndExpression(OperatorExpression, Node):
     def __init__(self, left_expression=None, right_expression=None, position=None):
         super().__init__(left_expression, right_expression, position)

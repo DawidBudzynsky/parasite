@@ -1,7 +1,0 @@
-main(){
-	print("hi")
-}
-
-main(){
-	print("hello")
-}

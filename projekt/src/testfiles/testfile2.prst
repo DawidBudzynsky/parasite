@@ -1,13 +1,12 @@
+//Multiple functions with multiple aspects, one (logAddMinus) is attached to both add and minus function
+//and (logSum) function is only attached to add function
+
 add(a: int, b: int) int {
     return a + b
 }
 
 minus(a: int, b: int) int {
     return a - b
-}
-
-sum(a: int, b: int) int {
-    return a + b
 }
 
 aspect logAddMinus(add, minus){
@@ -21,13 +20,13 @@ aspect logAddMinus(add, minus){
     after{
         print("function result: " + function.result->str)
         print("====function " + function.name + " ended====")
-        print("")
     }
 }
 
 aspect logSum(add){
     after{
-        print("xp res: " + function.result->str)
+        print("logSum aspect res: " + function.result->str)
+        print("")
     }
 }
 
@@ -38,3 +37,19 @@ main(){
     minus(var1, var2)
 }
 
+// should return:
+//
+// ====function add called====
+// called with args:
+// name: a, value: 5
+// name: b, value: 2
+// function result: 7
+// ====function add ended====
+// logSum aspect res: 7
+//
+// ====function minus called====
+// called with args:
+// name: a, value: 5
+// name: b, value: 2
+// function result: 3
+// ====function minus ended====

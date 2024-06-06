@@ -1,18 +1,23 @@
-## Opis
+## TKOM - Dokumentacja końcowa
 
-Projekt języka programowania “Parasite”. Napisany w języku Python.
+Dawid Budzyński, numer albumu: 319020
 
-Język Parasite umożliwia zaimplementowanie paradygmatu programowania aspektowego do języka. Poza charakterystyczną opcją definiowania aspektów do funkcji, język umożliwia inicjalizację i przypisywanie zmiennych, obsługę pętli while oraz instrukcji warunkowych, definiowanie funkcji z argumentami wywołania, funkcje rekurencyjne, operacje arytmetyczne, konwersja typów, konkatenacje typów string.
+### Projekt języka programowania “Parasite” ogólnego przeznaczenia z implementacją paradygmatu aspektowego. 
+
+Język Parasite umożliwia zaimplementowanie paradygmatu programowania aspektowego do języka. Poza charakterystyczną opcją definiowania aspektów do funkcji z możliwością iteracji po elementach aktualnie wywoływanej funkcji, język umożliwia inicjalizację i przypisywanie zmiennych, obsługę pętli while oraz instrukcji warunkowych, definiowanie funkcji z argumentami wywołania, funkcje rekurencyjne, operacje arytmetyczne, konwersje typów, konkatenacje typów string.
+
+
+## Opis funkcjonalności
 
 Implementacja wszystkich elementów projeku napisana w języku Python.
 
-## Standardowe operacje
+# Standardowe operacje
 
 - inicjalizacja i przypisanie zmiennej
 - obsługa operacji arytmetycznych ( o różnym priorytecie wykonania)
 - konkatenacja typu string
 - instrukcje warunkowe (if, elif, else)
-- instrukcja pętli (while)
+- instrukcja pętli (while, for)
 - definiowanie funkcji
 - wywołania funkcji (zwykłe i rekurencyjne)
 - konwersja typów (operator ->)
@@ -25,7 +30,45 @@ Implementacja wszystkich elementów projeku napisana w języku Python.
         - “before” (działanie wykonywane przed funkcją powiązaną z aspektem) i
         - “after”(działanie wykonywane po funkcji powiązanej z aspektem)
         - before lub after są opcjonalne, tzn. można wywołać tylko before lub tylko after albo oba, jednak zawsze w aspekcie musi znaleźć się przynajmniej jedno z nich
-- Przykłady definicji i wywołań poniżej
+- w aspekcie istnieje możliwośc iteracji po elementach aktualnie wywoływanej funkcji oraz dostęp do (value, name, type) elementu
+
+Przykładowa definicja aspektu:
+
+aspect functionAspect(sum, "^sum\\d$"){
+    before{
+        print("running function " + function.name)
+    }
+    after{
+        print("ending function " + function.name)
+    }
+}
+
+Argumenty aspektu:
+- jako argumenty aspektu, możemy podawać identyfiaktory wybranych funkcji lub string zawierający regex, które funkcje chcemy objąć naszym aspektem
+- w podanym przykładzie aspekt zostanie 'podczepiony' do funkcji o identyfikatorze 'sum' oraz każdej funkcji, która zawiera się w regex (np. sum1)
+
+Objeckt 'function':
+- dla każdego aspektu definiowany jest obiekt 'function', który oznacza aktualnie aspektowaną funkcję
+- objekt function posiada pola: name (nazwa funkcji), type (typ zwracany przez funkcje), args (argumenty wywołania)
+- w omawianym przykładzie 'function.name' to 'sum'
+
+Iteracja po 'function':
+
+aspect iterativeAspect(sum){
+    before{
+        print("running function " + function.name)
+        for argument in function.args {
+            print(arg.name)
+            print(arg.type)
+            print(arg.value)
+        }
+    }
+}
+
+- w tym przykładzie iterujemy po argumentach wywołania funkcji
+- zmienna 'argument' jest dynamicznie przypisywana do kolejnych argumentów funkcji
+- argument posiada pola: name (nazwa argumentu), value (wartość argumetu), type (typ argumentu)
+
 
 ## Założenia języka (koncepcja)
 
@@ -44,186 +87,7 @@ Implementacja wszystkich elementów projeku napisana w języku Python.
 - głębokość rekurencji = 200
 - maksymalna długość string = 200
 
-## Przykłady wykorzystania języka
-
-inicjalizacja i przypisanie wartości
-
-```jsx
-int a = 5
-str b = "hi"
-
-a = 3
-a = "hello" // niedozwolone
-```
-
----
-
-operacje artymetyczne
-
-```jsx
-int a = 6
-a = a + 10 * (5-2) // a == 36
-```
-
----
-
-komentarze
-
-```jsx
-// this is a comment
-```
-
----
-
-instrukcje warunkowe
-
-```jsx
-int a = 6
-if a > 3 {
-	print("a is greater than 3")
-} elif a < 3 {
-	print("a is smaller than 3")
-} else {
-	print("a is equal to 3")
-}
-// output:
-// a is greater than 3
-```
-
----
-
-instrukcja pętli
-
-```jsx
-int i = 0
-while i < 10 {
-	print(i)
-	i = i + 1
-}
-```
-
----
-
-przykrywanie zmiennych
-
-```jsx
-main(){
-	int a = 10
-	int b = 12
-	if b > 10 {
-		int a = 15
-		print(a)
-	}
-}
-//output
-// 15
-```
-
----
-
-Funkcja z argumentem (przez wartość)
-
-```jsx
-square(x: int) int {
-	return x*x
-}
-
-int x = 5
-int a = square(x) // a == 25, x == 5
-```
-
----
-
-funkcja z argumentem
-
-```jsx
-triangleArea(a: int, h: int) float {
-	return 0.5 * a * h
-}
-
-int a = 3
-int h = 7
-float result = triangleArea(a, h) // result == 10.5
-```
-
----
-
-funkcja rekurencyjna
-
-```jsx
-fibonacci(n: int) int {
-	if n <= 1 {
-		return n
-	} else {
-		return fibonacci(n-1) + fibonacci(n - 2)
-	}
-}
-
-int result = fibonacci(5)
-```
-
----
-
-aspekty
-
-```jsx
-// askept z wylistowaniem argumentów funkcji, do której został podczepiony
-
-doSomething(){
-        print("hello world")
-}
-
-aspect logFunctionCall(doSomething){
-        int coutner = 0;
-        before{
-		        for arg in function.args {
-			        print(arg.value)
-			        print(arg.name)
-			        print(arg.type)
-			        if arg.type is int {
-				        print("argument " + arg.value + "jest typu int")
-			        }
-		        }
-            print("starting function " function.name)
-        }
-        after{
-            print("ending function with result " + function.result)
-            print("aspect called: " + counter + "times")
-        }
-}
-doSomething()
-
-//output:
-// starting function
-// hello world
-// ending function
-```
-
-```jsx
-sayHello(x: string) {
-	print("hello " + x)
-}
-
-aspect prepareSay(sayHello){
-	 before{
-        print("Will call function " + function.name + " with arguments: ");
-        for arg in function.args {
-            print(arg.value)
-        }
-    }
-}
-
-sayHello("Alice")
-//output:
-// Will call function sayHello with arguments: Alice
-// hello Alice
-```
-
----
-
----
-
-EBNF
+### EBNF
 
 ```jsx
 program              = { function_definition | aspect_definition } ;
@@ -352,17 +216,188 @@ literal              = letter
                      | "\" 
                      ;
 
+## Przykłady wykorzystania języka
+
+inicjalizacja i przypisanie wartości
+
+```jsx
+int a = 5
+str b = "hi"
+
+a = 3
+a = "hello" // niedozwolone
 ```
 
-## Dane wejściowe strumienie/pliki
+---
 
-Program napisany w Parasite może zostać uruchomiony ze strumienia oraz z pliku.
+operacje artymetyczne
 
-Uruchomienie programy ze strumienia danych obsługuje wszystkie bajty jako program do interpretacji, aż do wystąpienia znaku ETX.
+```jsx
+int a = 6
+a = a + 10 * (5-2) // a == 36
+```
 
-Język dostarcza narzędzia do przesyłania danych na standardowe wyjście - funkcja print().
+---
 
-Co oznacza, że interpreter posiada dostęp do standardowego wejścia i wyjścia.
+komentarze
+
+```jsx
+// this is a comment
+```
+
+---
+
+instrukcje warunkowe
+
+```jsx
+int a = 6
+if a > 3 {
+	print("a is greater than 3")
+} elif a < 3 {
+	print("a is smaller than 3")
+} else {
+	print("a is equal to 3")
+}
+// output:
+// a is greater than 3
+```
+
+---
+
+instrukcja pętli
+
+```jsx
+int i = 0
+while i < 10 {
+	print(i)
+	i = i + 1
+}
+```
+
+---
+
+przykrywanie zmiennych
+
+```jsx
+main(){
+	int a = 10
+	int b = 12
+	if b > 10 {
+		int a = 15
+		print(a)
+	}
+}
+//output
+// 15
+```
+
+---
+
+Funkcja z argumentem (przez wartość)
+
+```jsx
+square(x: int) int {
+	return x*x
+}
+
+int x = 5
+int a = square(x) // a == 25, x == 5
+```
+
+---
+
+funkcja z argumentem
+
+```jsx
+triangleArea(a: int, h: int) float {
+	return 0.5 * a * h
+}
+
+int a = 3
+int h = 7
+float result = triangleArea(a, h) // result == 10.5
+```
+
+---
+
+funkcja rekurencyjna
+
+```jsx
+fibonacci(n: int) int {
+	if n <= 1 {
+		return n
+	} else {
+		return fibonacci(n-1) + fibonacci(n - 2)
+	}
+}
+
+int result = fibonacci(5)
+```
+
+---
+
+### aspekty
+
+```jsx
+// askept z wylistowaniem argumentów funkcji, do której został podczepiony
+
+doSomething(){
+        print("hello world")
+}
+
+aspect logFunctionCall(doSomething){
+        int coutner = 0;
+        before{
+		        for arg in function.args {
+			        print(arg.value)
+			        print(arg.name)
+			        print(arg.type)
+			        if arg.type is int {
+				        print("argument " + arg.value + "jest typu int")
+			        }
+		        }
+            print("starting function " function.name)
+        }
+        after{
+            print("ending function with result " + function.result)
+            print("aspect called: " + counter + "times")
+        }
+}
+doSomething()
+
+//output:
+// starting function
+// hello world
+// ending function
+```
+
+```jsx
+sayHello(x: string) {
+	print("hello " + x)
+}
+
+aspect prepareSay(sayHello){
+	 before{
+        print("Will call function " + function.name + " with arguments: ");
+        for arg in function.args {
+            print(arg.value)
+        }
+    }
+}
+
+sayHello("Alice")
+//output:
+// Will call function sayHello with arguments: Alice
+// hello Alice
+```
+
+---
+
+---
+
+
+```
+
 
 ## Obsługa błędów
 
@@ -461,24 +496,39 @@ Error: Function redefinition, function name: [main]; [5:1]
 
 ---
 
+## Dane wejściowe strumienie/pliki
+
+Program napisany w Parasite może zostać uruchomiony ze strumienia oraz z pliku. (pliki powinny mieć rozszerzenie .prst)
+
+Uruchomienie programy ze strumienia danych obsługuje wszystkie bajty jako program do interpretacji, aż do wystąpienia znaku ETX.
+
+Język dostarcza narzędzia do przesyłania danych na standardowe wyjście - funkcja print().
+
+Co oznacza, że interpreter posiada dostęp do standardowego wejścia i wyjścia.
+
 ## Uruchomienie
 
-Uruchomienie programu z pliku (wyjście standardowe)
-
+Uruchomienie programu z pliku 
 ```jsx
-python main.py nazwapliku
-Hello world!
+./parasite nazwapliku.prst
+
+lub
+
+python main.py nazwapliku.prst
 ```
 
-Uruchomienie programu ze strumienia (wyjście standardowe)
+Uruchomienie programu ze strumienia 
+
+echo 'main(){ print("Hello world") }' | ./parasite 
+
+lub
+
+echo 'main(){ print("Hello world") }' | python main.py
 ```jsx
-// jeszcze nie udalo sie zrobić
-```
 
 ## Tokeny
 
 Operatory relacyjne:
-
 - EQUALS (==)
 - NOT_EQUALS (!=)
 - GREATER (>)
@@ -572,6 +622,29 @@ W przypadkach konwersji na boolean:
 - int/float 0 oznacza `false`
 - inny int/float oznacza `true`
 
+Operacje *, /, +, -
+Dodawanie (+)
+- int + int: zwraca wynik dodawania jako wartość całkowitą (int)
+- float + float: zwraca wynik dodawania jako wartość zmiennoprzecinkową (float)
+- int + float lub float + int: zwraca wynik dodawania jako wartość zmiennoprzecinkową (float)
+- str + str: zwraca konkatencje stringów (string)
+- int + str lub float + str: nie są dozwolone
+
+Odejmowanie (-)
+- int - int: zwraca wynik odjemowania jako wartość całkowitą (int)
+- float - float: zwraca wynik odejmowania jako wartość zmiennoprzecinkową (float)
+- int - float lub float - int: zwraca wynik odjemowania jako wartość zmiennoprzecinkową (float)
+
+Mnożenie (*)
+- int * int: zwraca wynik mnożenia jako wartość całkowitą (int)
+- float * float: zwraca wynik mnożenia jako wartość zmiennoprzecinkową (float)
+- int * float lub float * int: zwraca wynik mnożenia jako wartość zmiennoprzecinkową (float)
+
+Dzielenie (/)
+- int / int: zwraca wynik mnożenia jako wartość całkowitą (int)
+- float / float: zwraca wynik dzielenia jako wartość zmiennoprzecinkową (float)
+- int / float lub float * int: zwraca wynik dzielenia jako wartość zmiennoprzecinkową (float)
+
 
 ## Opis realizacji modułów
 
@@ -585,7 +658,7 @@ Tokeny przechowują także informacje o swoim położeniu w kodzie źródłowym 
 
 W przypadku gdy lekser natrafi na niemożliwy do zdekodowania ciąg znaków analizator skanuje go aż do natrafienia na biały znak i przerywa działanie.
 
-1. Analizator składniowy 
+2. Analizator składniowy 
 
 Parser jako wejście przyjmuje strumień tokenów zwracany przez lekser. Lekser jest obiektem analizatora leksykalnego. 
 
@@ -595,35 +668,33 @@ Na podstawie podanych tokenów, oczekuje na tokeny określonego typu.
 
 W przypadku natrafienia na nieścisłość, analizator, rzuca wyjątkiem, który zawiera informacje o położeniu niepoprawnego kawałka kodu.
 
-2. Analizator semantyczny
+3. Interpreter
 
 Analizator semantyczny operuje na drzewie AST zwracanym przez parser. 
 
-Kontroluje “poprawność” (sens) analizowanego kodu.
+Napisany z zastosowaniem wzorca projektowego Wizytatora.
 
-
-
-Sprawdza: 
-
-- czy program zawiera wymaganą funkcję `main`
-- wszystkie odwołania do zmiennych (czy istnieją i zostały poprawnie użyte - sprawdzenie typu)
-- kontrola typów
+Kontroluje “poprawność” (sens) analizowanego kodu. Odwiedza każdy element drzewa składniowego i ewaluuje jego zawartość. Nadaje wartości zmiennym, jest odpowiedzialny za tworzenie Scopeów, sprawdza zgodności typów, zgodność podawanych argumentów wywołania funkcji.
 
 W przypadku natrafienia na nieścisłość analizator rzuca wyjątkiem, który zawiera informacje o położeniu niepoprawnego kawałku kodu, jeśli trzeba wypisuje też odpowiedni identyfikator.
 
-1. Interpreter
-
-Interpreter również działa na drzewie AST, działa dopiero gdy analiza semantyczna zakończy się powodzeniem. 
-
-Interpreter odwiedza elementy drzewa składniowego, ewaluując ich zawartość. Nadaje wartości zmiennym, sprawdza zgodność typów, zgodność podawanych do wywołań argumentów, uruchamia wywoływane funkcje i aspekty.
-
-Wykonuje operacje arytmetyczne, obsługuje instrukcje warunkowe, pętle, wywołania funkcji oraz inne konstrukcje językowe.
-
 Dba o to aby wywołania rekurencyjnie nie przekroczyly zdefiowanego limitu (implementacja za pomocą CallStack).
+
 
 ## Testy
 
-Testy sprawdzają poprawność działania różnych komponentów systemu, takich jak skaner, analizator leksykalny, parser i interpreter.
-Każdy z modułów zawiera testy jednostkowe oraz bardziej złożone
+Testy jednostkowe:
+lexer:
+-test_tokens: zbiór testów sprawdzający poprawność tworzonych przez lexer tokenów
+-test_unclosed_string_error: test sprawdzający czy rzucany jest wyjątek w przypadku niedomkniętego tekstu
+-test_code_example: test sprawdzający poprawnośc tworzonych tokenów dla ciągu przykładowego kodu źródłowego
 
+parser:
+- dla każdego z expression i statement zdefiniowany jest osobny plik sprawdzający poprawnośc tworzonego wyrażenia na podstawie przykładowego kodu źródłowego oraz potencjalnie rzucanych wyjątków
 
+Interpreter
+- Testuje wizytacje i ewaluajce każdego ze statementów bazując na podanym drzewie rozbioru, sprawdza potencjalne rzucane wyjątki
+- bardziej złożone testy mają nad ich definicją komenatrz opisujący co aktualnie jest testowane
+
+Pliki testowe
+- Przygotowane zostały również pliki testowe, które zawierają którki opis testowanej funkcjonalności oraz przewidywany wynik

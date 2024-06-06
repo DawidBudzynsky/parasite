@@ -376,7 +376,7 @@ class Parser:
         self.consume_token()
         position = self.token.position
         if (casting := self.parse_casting()) is None:
-            raise ValueError("fds")  # TODO: uzupelnij
+            raise ValueError("Cannot create castin")
         return constructor(casting, position)
 
     # casting = term, [ "->", type ] ;
@@ -604,7 +604,9 @@ class Parser:
         if result := self.parse_identifier_or_call():
             return result
         if self.token.token_type == Type.STRING:
-            return self.token.value
+            arg = String(value=self.token.value, position=self.token.position)
+            self.consume_token()
+            return arg
         return None
 
     # aspect_definition = "aspect", identifier, "(", (identifier | string) {"," (identifier | string), ")", aspect_block;

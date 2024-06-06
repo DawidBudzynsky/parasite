@@ -1,0 +1,27 @@
+// While statement
+
+sayHello(x: str) {
+    print("Hello " + x)
+}
+
+main(){
+    int i = 0
+
+    while i < 10 {
+        sayHello(i->str)
+        i = i + 1
+    }
+}
+
+// should return:
+// 
+// Hello 0
+// Hello 1
+// Hello 2
+// Hello 3
+// Hello 4
+// Hello 5
+// Hello 6
+// Hello 7
+// Hello 8
+// Hello 9

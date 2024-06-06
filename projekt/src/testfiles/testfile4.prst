@@ -1,3 +1,5 @@
+// One function with multiple aspects attached to it
+
 fun1(a: int) int {
     return a
 }
@@ -33,3 +35,11 @@ main(){
     fun1(1)
 }
 
+// should return:
+//
+//asp1 called
+//asp2 called
+//asp3 called
+//asp1 ended, res: 1
+//asp2 ended, res: 1
+//asp3 ended, res: 1

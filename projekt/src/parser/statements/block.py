@@ -1,7 +1,6 @@
 from parser.statement import Statement
 
 
-# TODO: position
 class Block(Statement):
     def __init__(self, statements=[]):
         self.statements = statements

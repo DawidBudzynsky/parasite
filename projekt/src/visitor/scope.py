@@ -1,14 +1,3 @@
-import builtins
-from typing import TypeAlias
-from parser.exceptions import InvalidSyntaxVerbose
-from parser.type_annotations import TypeAnnotation
-from parser.variable import Variable
-from visitor.visitor_exceptions import WrongReturnType
-from visitor.visitor_exceptions import NotDeclared
-from visitor.visitor_exceptions import Redefinition
-
-
-# TODO: interfejs
 class ScopeVariable:
     def __init__(self, value, type):
         self.value = value

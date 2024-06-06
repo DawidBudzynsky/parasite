@@ -1,7 +1,6 @@
 from parser.values.operator_expression import OperatorExpression
 
 
-# TODO: position
 class DivideExpression(OperatorExpression):
     def __init__(self, left_expression, right_expression, position=None):
         super().__init__(left_expression, right_expression, position)

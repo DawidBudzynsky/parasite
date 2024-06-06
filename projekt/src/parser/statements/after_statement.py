@@ -1,7 +1,6 @@
 from parser.statement import Statement
 
 
-# TODO: position
 class AfterStatement(Statement):
     def __init__(self, block):
         self.block = block
