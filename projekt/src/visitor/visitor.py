@@ -1,4 +1,5 @@
 import builtins
+import re
 from parser.function import FunctionDef
 from parser.statements.after_statement import AfterStatement
 from parser.statements.aspect_block_statement import AspectBlock
@@ -10,6 +11,7 @@ from parser.statements.for_each_statement import ForEachStatement
 from parser.statements.fun_call_statement import FunCallStatement
 from parser.statements.if_statement import IfStatement
 from parser.statements.loop_statement import LoopStatement
+from parser.statements.program import Program
 from parser.statements.return_statement import ReturnStatement
 from parser.type_annotations import TypeAnnotation
 from parser.values.and_expression import AndExpression
@@ -62,7 +64,7 @@ from visitor.visitor_exceptions import (
 
 
 class CodeVisitor(Visitor):
-    def __init__(self):
+    def __init__(self, max_call_depth=200):
         self.functions = {"print": EmbeddedFunction(name="print", func=print)}
         self.aspects: Dict[str, Aspect] = {}
         self.scope_stack = Stack()
@@ -72,15 +74,59 @@ class CodeVisitor(Visitor):
         self.fun_aspect_map = {}
         self.returning_flag = False
         self.curr_aspect_fun = {}
-        self.last_result = []
+        self.last_result = None
         self.type_annotations = {
             TypeAnnotation.INT: "int",
             TypeAnnotation.FLOAT: "float",
             TypeAnnotation.STR: "str",
             TypeAnnotation.BOOL: "bool",
         }
-        self.max_depth = 200
+        self.max_depth = max_call_depth
         self.call_stack = CallStack()
+
+    def is_valid_regex(self, regex):
+        try:
+            re.compile(regex)
+            return True
+        except re.error:
+            return False
+
+    def get_matching_function_names(self, regex, functions):
+        pattern = re.compile(regex)
+        return [fun_name for fun_name in functions if pattern.match(fun_name)]
+
+    def visit_program(self, program: Program):
+        functions = program.functions
+        if functions.get("main") is None:
+            raise ValueError("Error: Missing main function")
+
+        aspects = program.aspects
+
+        fun_aspect_dict = {}
+
+        for _, aspect in aspects.items():
+            for fun in aspect.aspect_args:
+                if isinstance(fun, String):
+                    if self.is_valid_regex(fun.value):
+                        matching_functions = self.get_matching_function_names(
+                            fun.value, functions.keys()
+                        )
+                        for match in matching_functions:
+                            if match not in fun_aspect_dict:
+                                fun_aspect_dict[match] = []
+                            if aspect not in fun_aspect_dict[match]:
+                                fun_aspect_dict[match].append(aspect)
+                else:
+                    if fun_aspect_dict.get(fun.name) is None:
+                        fun_aspect_dict[fun.name] = []
+                    if aspect not in fun_aspect_dict[fun.name]:
+                        fun_aspect_dict[fun.name].append(aspect)
+
+        self.set_functions(functions)
+        self.set_aspects(aspects)
+        self.set_function_to_aspect_map(fun_aspect_dict)
+
+        FunCallStatement(identifier="main", arguments=[], position=(0, 0)).accept(self)
 
     def create_new_scope(self, parent):
         new_scope = Scope(parent=parent, variables={})
