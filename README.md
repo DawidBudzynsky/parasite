@@ -33,7 +33,7 @@ Implementacja wszystkich elementów projeku napisana w języku Python.
 - w aspekcie istnieje możliwośc iteracji po elementach aktualnie wywoływanej funkcji oraz dostęp do (value, name, type) elementu
 
 Przykładowa definicja aspektu:
-
+```python
 aspect functionAspect(sum, "^sum\\d$"){
     before{
         print("running function " + function.name)
@@ -42,7 +42,7 @@ aspect functionAspect(sum, "^sum\\d$"){
         print("ending function " + function.name)
     }
 }
-
+```
 Argumenty aspektu:
 - jako argumenty aspektu, możemy podawać identyfiaktory wybranych funkcji lub string zawierający regex, które funkcje chcemy objąć naszym aspektem
 - w podanym przykładzie aspekt zostanie 'podczepiony' do funkcji o identyfikatorze 'sum' oraz każdej funkcji, która zawiera się w regex (np. sum1)
@@ -53,7 +53,7 @@ Objeckt 'function':
 - w omawianym przykładzie 'function.name' to 'sum'
 
 Iteracja po 'function':
-
+```python
 aspect iterativeAspect(sum){
     before{
         print("running function " + function.name)
@@ -64,7 +64,7 @@ aspect iterativeAspect(sum){
         }
     }
 }
-
+```
 - w tym przykładzie iterujemy po argumentach wywołania funkcji
 - zmienna 'argument' jest dynamicznie przypisywana do kolejnych argumentów funkcji
 - argument posiada pola: name (nazwa argumentu), value (wartość argumetu), type (typ argumentu)
@@ -215,7 +215,7 @@ literal              = letter
                      | "|" 
                      | "\" 
                      ;
-
+```
 ## Przykłady wykorzystania języka
 
 inicjalizacja i przypisanie wartości
@@ -412,7 +412,7 @@ sayHello("Alice")
 main(){
 	print("hi" + a)
 }
-```
+
 
 
 Error: Couldn't find [a] in scope, declare it first; [2:15]
@@ -508,23 +508,23 @@ Co oznacza, że interpreter posiada dostęp do standardowego wejścia i wyjścia
 
 ## Uruchomienie
 
-Uruchomienie programu z pliku 
+### Uruchomienie programu z pliku 
 ```jsx
 ./parasite nazwapliku.prst
-
+```
 lub
-
+```jsx
 python main.py nazwapliku.prst
 ```
 
-Uruchomienie programu ze strumienia 
-
-echo 'main(){ print("Hello world") }' | ./parasite 
-
-lub
-
-echo 'main(){ print("Hello world") }' | python main.py
+### Uruchomienie programu ze strumienia 
 ```jsx
+echo 'main(){ print("Hello world") }' | ./parasite 
+```
+lub
+```jsx
+echo 'main(){ print("Hello world") }' | python main.py
+```
 
 ## Tokeny
 
@@ -649,35 +649,22 @@ Dzielenie (/)
 ## Opis realizacji modułów
 
 1. Analizator leksykalny
-
 Jako wejście analizator leksykalny przyjmuje kod źródłowy programu a następnie go przetwarza, na wynikające z gramatyki tokeny. 
-
 Tokeny powiązane są z wartościami.
-
 Tokeny przechowują także informacje o swoim położeniu w kodzie źródłowym - w postaci (nr linii, nr kolumny).
-
 W przypadku gdy lekser natrafi na niemożliwy do zdekodowania ciąg znaków analizator skanuje go aż do natrafienia na biały znak i przerywa działanie.
 
 2. Analizator składniowy 
-
 Parser jako wejście przyjmuje strumień tokenów zwracany przez lekser. Lekser jest obiektem analizatora leksykalnego. 
-
 Parser produkuje drzewo rozbioru składniowego programu `AST`.
-
 Na podstawie podanych tokenów, oczekuje na tokeny określonego typu.
-
 W przypadku natrafienia na nieścisłość, analizator, rzuca wyjątkiem, który zawiera informacje o położeniu niepoprawnego kawałka kodu.
 
 3. Interpreter
-
 Analizator semantyczny operuje na drzewie AST zwracanym przez parser. 
-
 Napisany z zastosowaniem wzorca projektowego Wizytatora.
-
 Kontroluje “poprawność” (sens) analizowanego kodu. Odwiedza każdy element drzewa składniowego i ewaluuje jego zawartość. Nadaje wartości zmiennym, jest odpowiedzialny za tworzenie Scopeów, sprawdza zgodności typów, zgodność podawanych argumentów wywołania funkcji.
-
 W przypadku natrafienia na nieścisłość analizator rzuca wyjątkiem, który zawiera informacje o położeniu niepoprawnego kawałku kodu, jeśli trzeba wypisuje też odpowiedni identyfikator.
-
 Dba o to aby wywołania rekurencyjnie nie przekroczyly zdefiowanego limitu (implementacja za pomocą CallStack).
 
 
@@ -685,9 +672,9 @@ Dba o to aby wywołania rekurencyjnie nie przekroczyly zdefiowanego limitu (impl
 
 Testy jednostkowe:
 lexer:
--test_tokens: zbiór testów sprawdzający poprawność tworzonych przez lexer tokenów
--test_unclosed_string_error: test sprawdzający czy rzucany jest wyjątek w przypadku niedomkniętego tekstu
--test_code_example: test sprawdzający poprawnośc tworzonych tokenów dla ciągu przykładowego kodu źródłowego
+- test_tokens: zbiór testów sprawdzający poprawność tworzonych przez lexer tokenów
+- test_unclosed_string_error: test sprawdzający czy rzucany jest wyjątek w przypadku niedomkniętego tekstu
+- test_code_example: test sprawdzający poprawnośc tworzonych tokenów dla ciągu przykładowego kodu źródłowego
 
 parser:
 - dla każdego z expression i statement zdefiniowany jest osobny plik sprawdzający poprawnośc tworzonego wyrażenia na podstawie przykładowego kodu źródłowego oraz potencjalnie rzucanych wyjątków
