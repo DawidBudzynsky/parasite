@@ -2,7 +2,6 @@ from lexer.lexer import Lexer
 from lexer.reader import Source
 from parser.parser import Parser
 from visitor.interpreter import Interpreter
-from visitor.visitor import CodeVisitor
 import argparse
 import sys
 import io
@@ -13,9 +12,8 @@ def main(input_data):
         source = Source(io.StringIO(input_data))
         lexer = Lexer(source)
         parser = Parser(lexer)
-        visitor = CodeVisitor()
-        interpreter = Interpreter(parser, visitor)
-        interpreter.run()
+        interpreter = Interpreter()
+        interpreter.run(parser.parse_program())
     except Exception as e:
         print(e)
 
@@ -40,11 +38,17 @@ if __name__ == "__main__":
             sys.exit(1)
         try:
             with open(args.file_name, "r") as sourcefile:
-                input_data = sourcefile.read()
+                try:
+                    source = Source(sourcefile)
+                    lexer = Lexer(source)
+                    parser = Parser(lexer)
+                    interpreter = Interpreter()
+                    interpreter.run(parser.parse_program())
+                except Exception as e:
+                    print(e)
+
         except FileNotFoundError:
             print(f"The file '{args.file_name}' was not found.")
             sys.exit(1)
     else:
         input_data = sys.stdin.read()
-
-    main(input_data)
