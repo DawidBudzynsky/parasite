@@ -1,10 +1,21 @@
-## TKOM - Dokumentacja końcowa
-
-Dawid Budzyński, numer albumu: 319020
 
 ### Projekt języka programowania “Parasite” ogólnego przeznaczenia z implementacją paradygmatu aspektowego. 
 
 Język Parasite umożliwia zaimplementowanie paradygmatu programowania aspektowego do języka. Poza charakterystyczną opcją definiowania aspektów do funkcji z możliwością iteracji po elementach aktualnie wywoływanej funkcji, język umożliwia inicjalizację i przypisywanie zmiennych, obsługę pętli while oraz instrukcji warunkowych, definiowanie funkcji z argumentami wywołania, funkcje rekurencyjne, operacje arytmetyczne, konwersje typów, konkatenacje typów string.
+
+
+## Uruchomienie
+
+### Uruchomienie programu z pliku 
+```jsx
+python main.py nazwapliku.prst
+```
+
+### Uruchomienie programu ze strumienia 
+lub
+```jsx
+echo 'main(){ print("Hello world") }' | python main.py
+```
 
 
 ## Opis funkcjonalności
@@ -505,26 +516,6 @@ Uruchomienie programy ze strumienia danych obsługuje wszystkie bajty jako progr
 Język dostarcza narzędzia do przesyłania danych na standardowe wyjście - funkcja print().
 
 Co oznacza, że interpreter posiada dostęp do standardowego wejścia i wyjścia.
-
-## Uruchomienie
-
-### Uruchomienie programu z pliku 
-```jsx
-./parasite nazwapliku.prst
-```
-lub
-```jsx
-python main.py nazwapliku.prst
-```
-
-### Uruchomienie programu ze strumienia 
-```jsx
-echo 'main(){ print("Hello world") }' | ./parasite 
-```
-lub
-```jsx
-echo 'main(){ print("Hello world") }' | python main.py
-```
 
 ## Tokeny
 
